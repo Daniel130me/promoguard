@@ -121,6 +121,66 @@ final class CampaignPage {
 				</form>
 			</section>
 
+			<section class="promoguard-admin__panel" id="promoguard-edit-panel" aria-labelledby="promoguard-edit-title" hidden>
+				<h2 id="promoguard-edit-title"><?php esc_html_e( 'Manage campaign', 'promoguard-for-woocommerce' ); ?></h2>
+				<p id="promoguard-edit-summary"></p>
+				<form id="promoguard-edit-form">
+					<input id="promoguard-edit-id" name="campaign_id" type="hidden">
+					<div class="promoguard-admin__form-grid">
+						<div class="promoguard-admin__field">
+							<label for="promoguard-edit-name"><?php esc_html_e( 'Name', 'promoguard-for-woocommerce' ); ?> <span aria-hidden="true">*</span></label>
+							<input class="regular-text" id="promoguard-edit-name" name="name" type="text" maxlength="190" required>
+						</div>
+						<div class="promoguard-admin__field">
+							<label for="promoguard-edit-slug"><?php esc_html_e( 'Slug', 'promoguard-for-woocommerce' ); ?> <span aria-hidden="true">*</span></label>
+							<input class="regular-text" id="promoguard-edit-slug" name="slug" type="text" maxlength="190" required>
+						</div>
+						<div class="promoguard-admin__field promoguard-admin__field--wide">
+							<label for="promoguard-edit-description"><?php esc_html_e( 'Description', 'promoguard-for-woocommerce' ); ?></label>
+							<textarea class="large-text" id="promoguard-edit-description" name="description" rows="3"></textarea>
+						</div>
+						<div class="promoguard-admin__field">
+							<label for="promoguard-edit-goal"><?php esc_html_e( 'Goal', 'promoguard-for-woocommerce' ); ?></label>
+							<input class="regular-text" id="promoguard-edit-goal" name="goal" type="text" maxlength="190">
+						</div>
+						<div class="promoguard-admin__field">
+							<label for="promoguard-edit-priority"><?php esc_html_e( 'Priority', 'promoguard-for-woocommerce' ); ?></label>
+							<input id="promoguard-edit-priority" name="priority" type="number" step="1" required>
+						</div>
+						<div class="promoguard-admin__field">
+							<label for="promoguard-edit-status"><?php esc_html_e( 'Lifecycle status', 'promoguard-for-woocommerce' ); ?></label>
+							<select id="promoguard-edit-status" name="status">
+								<option value="draft"><?php esc_html_e( 'Draft', 'promoguard-for-woocommerce' ); ?></option>
+								<option value="active"><?php esc_html_e( 'Active', 'promoguard-for-woocommerce' ); ?></option>
+								<option value="paused"><?php esc_html_e( 'Paused', 'promoguard-for-woocommerce' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Scheduling changes how an Active campaign is displayed without changing its stored lifecycle status.', 'promoguard-for-woocommerce' ); ?></p>
+						</div>
+						<div class="promoguard-admin__field promoguard-admin__field--wide promoguard-admin__schedule-fields">
+							<div>
+								<label for="promoguard-edit-starts"><?php esc_html_e( 'Starts at (UTC)', 'promoguard-for-woocommerce' ); ?></label>
+								<input id="promoguard-edit-starts" name="starts_at_gmt" type="datetime-local">
+							</div>
+							<div>
+								<label for="promoguard-edit-ends"><?php esc_html_e( 'Ends at (UTC)', 'promoguard-for-woocommerce' ); ?></label>
+								<input id="promoguard-edit-ends" name="ends_at_gmt" type="datetime-local">
+							</div>
+						</div>
+					</div>
+					<p class="promoguard-admin__readonly" id="promoguard-edit-readonly" hidden><?php esc_html_e( 'Archived campaigns are read-only and remain available for historical reporting.', 'promoguard-for-woocommerce' ); ?></p>
+					<div class="promoguard-admin__actions promoguard-admin__actions--spread">
+						<div class="promoguard-admin__actions">
+							<button class="button button-primary" id="promoguard-edit-save" type="submit"><?php esc_html_e( 'Save changes', 'promoguard-for-woocommerce' ); ?></button>
+							<button class="button" id="promoguard-edit-cancel" type="button"><?php esc_html_e( 'Close', 'promoguard-for-woocommerce' ); ?></button>
+						</div>
+						<div class="promoguard-admin__actions">
+							<button class="button" id="promoguard-edit-archive" type="button"><?php esc_html_e( 'Archive campaign', 'promoguard-for-woocommerce' ); ?></button>
+							<button class="button promoguard-admin__danger" id="promoguard-edit-delete" type="button"><?php esc_html_e( 'Delete permanently', 'promoguard-for-woocommerce' ); ?></button>
+						</div>
+					</div>
+					<p class="promoguard-admin__form-error" id="promoguard-edit-error" role="alert" hidden></p>
+				</form>
+			</section>
 			<section class="promoguard-admin__panel" aria-labelledby="promoguard-list-title">
 				<div class="promoguard-admin__toolbar">
 					<div>
@@ -132,10 +192,8 @@ final class CampaignPage {
 						<select id="promoguard-status-filter">
 							<option value=""><?php esc_html_e( 'All statuses', 'promoguard-for-woocommerce' ); ?></option>
 							<option value="draft"><?php esc_html_e( 'Draft', 'promoguard-for-woocommerce' ); ?></option>
-							<option value="scheduled"><?php esc_html_e( 'Scheduled', 'promoguard-for-woocommerce' ); ?></option>
 							<option value="active"><?php esc_html_e( 'Active', 'promoguard-for-woocommerce' ); ?></option>
 							<option value="paused"><?php esc_html_e( 'Paused', 'promoguard-for-woocommerce' ); ?></option>
-							<option value="expired"><?php esc_html_e( 'Expired', 'promoguard-for-woocommerce' ); ?></option>
 							<option value="archived"><?php esc_html_e( 'Archived', 'promoguard-for-woocommerce' ); ?></option>
 						</select>
 						<button class="button" id="promoguard-refresh" type="button"><?php esc_html_e( 'Refresh', 'promoguard-for-woocommerce' ); ?></button>
@@ -149,6 +207,7 @@ final class CampaignPage {
 							<th scope="col"><?php esc_html_e( 'Status', 'promoguard-for-woocommerce' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Schedule', 'promoguard-for-woocommerce' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Priority', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Actions', 'promoguard-for-woocommerce' ); ?></th>
 						</tr></thead>
 						<tbody id="promoguard-campaign-rows"></tbody>
 					</table>

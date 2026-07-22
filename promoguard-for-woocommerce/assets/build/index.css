@@ -6,6 +6,7 @@
 	--promoguard-soft: #f6f7f7;
 	max-width: 1200px;
 }
+.promoguard-admin [hidden] { display: none !important; }
 
 .promoguard-admin__header,
 .promoguard-admin__toolbar,
@@ -44,6 +45,12 @@
 .promoguard-admin__field input,
 .promoguard-admin__field textarea { box-sizing: border-box; max-width: none; width: 100%; }
 .promoguard-admin__field--wide { grid-column: 1 / -1; }
+.promoguard-admin__schedule-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.promoguard-admin__actions--spread { justify-content: space-between; }
+.promoguard-admin__readonly { background: var(--promoguard-soft); border-left: 4px solid #646970; padding: 12px; }
+.promoguard-admin .promoguard-admin__danger { border-color: #b32d2e; color: #b32d2e; }
+.promoguard-admin .promoguard-admin__danger:hover,
+.promoguard-admin .promoguard-admin__danger:focus { border-color: #8a2424; color: #8a2424; }
 .promoguard-admin__form-error { color: #b32d2e; font-weight: 600; }
 .promoguard-admin__filter label { font-weight: 600; }
 .promoguard-admin__table-wrap { margin: 16px -20px 0; }
@@ -90,6 +97,9 @@
 	.promoguard-admin__actions .button { min-height: 44px; }
 	.promoguard-admin__form-grid { grid-template-columns: 1fr; }
 	.promoguard-admin__field--wide { grid-column: auto; }
+	.promoguard-admin__schedule-fields { grid-template-columns: 1fr; }
+	.promoguard-admin__actions--spread { align-items: stretch; flex-direction: column; }
+	.promoguard-admin__actions--spread > .promoguard-admin__actions { flex-wrap: wrap; }
 	.promoguard-admin__filter { align-items: stretch; flex-wrap: wrap; }
 	.promoguard-admin__filter label { flex-basis: 100%; }
 	.promoguard-admin__filter select { flex: 1 1 180px; }

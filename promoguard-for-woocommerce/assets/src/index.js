@@ -16,6 +16,24 @@
 	const byId = ( id ) => document.getElementById( id );
 	const elements = {
 		cancel: byId( 'promoguard-create-cancel' ),
+		editArchive: byId( 'promoguard-edit-archive' ),
+		editCancel: byId( 'promoguard-edit-cancel' ),
+		editDelete: byId( 'promoguard-edit-delete' ),
+		editDescription: byId( 'promoguard-edit-description' ),
+		editEnds: byId( 'promoguard-edit-ends' ),
+		editError: byId( 'promoguard-edit-error' ),
+		editForm: byId( 'promoguard-edit-form' ),
+		editGoal: byId( 'promoguard-edit-goal' ),
+		editId: byId( 'promoguard-edit-id' ),
+		editName: byId( 'promoguard-edit-name' ),
+		editPanel: byId( 'promoguard-edit-panel' ),
+		editPriority: byId( 'promoguard-edit-priority' ),
+		editReadonly: byId( 'promoguard-edit-readonly' ),
+		editSave: byId( 'promoguard-edit-save' ),
+		editSlug: byId( 'promoguard-edit-slug' ),
+		editStarts: byId( 'promoguard-edit-starts' ),
+		editStatus: byId( 'promoguard-edit-status' ),
+		editSummary: byId( 'promoguard-edit-summary' ),
 		empty: byId( 'promoguard-empty' ),
 		filter: byId( 'promoguard-status-filter' ),
 		form: byId( 'promoguard-create-form' ),
@@ -33,7 +51,7 @@
 		table: byId( 'promoguard-campaign-table' ),
 		toggle: byId( 'promoguard-create-toggle' ),
 	};
-	const state = { loading: false, page: 1, pages: 1, perPage: 20, slugDirty: false, status: '' };
+	const state = { campaigns: new Map(), editingId: null, editTrigger: null, loading: false, page: 1, pages: 1, perPage: 20, slugDirty: false, status: '' };
 	const statusLabels = {
 		active: __( 'Active', 'promoguard-for-woocommerce' ),
 		archived: __( 'Archived', 'promoguard-for-woocommerce' ),
@@ -130,8 +148,69 @@
 		return __( 'No schedule', 'promoguard-for-woocommerce' );
 	}
 
+	function setEditError( message = '' ) {
+		elements.editError.textContent = message;
+		elements.editError.hidden = ! message;
+	}
+
+	function setEditBusy( busy ) {
+		const campaign = state.campaigns.get( state.editingId );
+		const readOnly = 'archived' === campaign?.status;
+		elements.editForm.querySelectorAll( 'input:not([type="hidden"]), textarea, select' ).forEach( ( control ) => {
+			control.disabled = busy || readOnly;
+		} );
+		elements.editSave.disabled = busy || readOnly;
+		elements.editArchive.disabled = busy;
+		elements.editDelete.disabled = busy;
+		elements.editCancel.disabled = busy;
+	}
+
+	function inputDate( value ) {
+		return value ? value.slice( 0, 16 ) : '';
+	}
+
+	function apiDate( value ) {
+		return value ? `${ value }:00Z` : null;
+	}
+
+	function closeEditor() {
+		elements.editPanel.hidden = true;
+		setEditError();
+		state.editingId = null;
+		state.editTrigger?.focus();
+		state.editTrigger = null;
+	}
+
+	function openEditor( campaignId, trigger ) {
+		const campaign = state.campaigns.get( campaignId );
+		if ( ! campaign ) {
+			return;
+		}
+		state.editingId = campaignId;
+		state.editTrigger = trigger;
+		elements.editId.value = String( campaign.id );
+		elements.editName.value = campaign.name;
+		elements.editSlug.value = campaign.slug;
+		elements.editDescription.value = campaign.description || '';
+		elements.editGoal.value = campaign.goal || '';
+		elements.editPriority.value = String( campaign.priority );
+		elements.editStarts.value = inputDate( campaign.starts_at_gmt );
+		elements.editEnds.value = inputDate( campaign.ends_at_gmt );
+		elements.editStatus.value = 'archived' === campaign.status ? 'draft' : campaign.status;
+		elements.editSummary.textContent = sprintf( __( 'Editing %s.', 'promoguard-for-woocommerce' ), campaign.name );
+		elements.editReadonly.hidden = 'archived' !== campaign.status;
+		elements.editSave.hidden = 'archived' === campaign.status;
+		elements.editArchive.hidden = 'archived' === campaign.status;
+		elements.editDelete.hidden = 'draft' !== campaign.status;
+		elements.editPanel.hidden = false;
+		setEditError();
+		setEditBusy( false );
+		elements.editPanel.scrollIntoView( { block: 'start' } );
+		elements.editName.focus();
+	}
+
 	function renderRows( campaigns ) {
-		const fragment = document.createDocumentFragment();
+		state.campaigns = new Map( campaigns.map( ( campaign ) => [ campaign.id, campaign ] ) );		const fragment = document.createDocumentFragment();
 		campaigns.forEach( ( campaign ) => {
 			const row = document.createElement( 'tr' );
 			const identity = createCell( __( 'Campaign', 'promoguard-for-woocommerce' ), 'promoguard-admin__identity' );
@@ -152,7 +231,16 @@
 			schedule.textContent = formatSchedule( campaign );
 			const priority = createCell( __( 'Priority', 'promoguard-for-woocommerce' ), 'promoguard-admin__number' );
 			priority.textContent = new Intl.NumberFormat().format( campaign.priority );
-			row.append( identity, status, schedule, priority );
+			const actions = createCell( __( 'Actions', 'promoguard-for-woocommerce' ) );
+			const manage = document.createElement( 'button' );
+			manage.className = 'button button-small promoguard-manage';
+			manage.dataset.campaignId = String( campaign.id );
+			manage.type = 'button';
+			manage.textContent = 'archived' === campaign.status
+				? __( 'View', 'promoguard-for-woocommerce' )
+				: __( 'Manage', 'promoguard-for-woocommerce' );
+			actions.append( manage );
+			row.append( identity, status, schedule, priority, actions );
 			fragment.append( row );
 		} );
 		elements.rows.replaceChildren( fragment );
@@ -201,6 +289,77 @@
 		}
 	}
 
+	elements.rows.addEventListener( 'click', ( event ) => {
+		const trigger = event.target instanceof Element ? event.target.closest( '[data-campaign-id]' ) : null;
+		if ( ! trigger ) {
+			return;
+		}
+		openEditor( Number( trigger.dataset.campaignId ), trigger );
+	} );
+	elements.editCancel.addEventListener( 'click', closeEditor );
+	elements.editForm.addEventListener( 'submit', async ( event ) => {
+		event.preventDefault();
+		setEditError();
+		if ( ! elements.editForm.reportValidity() || null === state.editingId ) {
+			return;
+		}
+		const formData = new window.FormData( elements.editForm );
+		setEditBusy( true );
+		try {
+			await request( `/campaigns/${ state.editingId }`, {
+				body: JSON.stringify( {
+					description: String( formData.get( 'description' ) || '' ).trim(),
+					ends_at_gmt: apiDate( String( formData.get( 'ends_at_gmt' ) || '' ) ),
+					goal: String( formData.get( 'goal' ) || '' ).trim() || null,
+					name: String( formData.get( 'name' ) || '' ).trim(),
+					priority: Number( formData.get( 'priority' ) ),
+					slug: String( formData.get( 'slug' ) || '' ).trim(),
+					starts_at_gmt: apiDate( String( formData.get( 'starts_at_gmt' ) || '' ) ),
+					status: String( formData.get( 'status' ) || '' ),
+				} ),
+				method: 'PATCH',
+			} );
+			closeEditor();
+			await loadCampaigns();
+			setNotice( __( 'Campaign updated.', 'promoguard-for-woocommerce' ), 'success' );
+		} catch ( error ) {
+			setEditError( error.message );
+		} finally {
+			if ( null !== state.editingId ) {
+				setEditBusy( false );
+			}
+		}
+	} );
+	elements.editArchive.addEventListener( 'click', async () => {
+		if ( null === state.editingId || ! window.confirm( __( 'Archive this campaign? It will become read-only, but its history will be preserved.', 'promoguard-for-woocommerce' ) ) ) {
+			return;
+		}
+		setEditBusy( true );
+		try {
+			await request( `/campaigns/${ state.editingId }/archive`, { method: 'POST' } );
+			closeEditor();
+			await loadCampaigns();
+			setNotice( __( 'Campaign archived.', 'promoguard-for-woocommerce' ), 'success' );
+		} catch ( error ) {
+			setEditError( error.message );
+			setEditBusy( false );
+		}
+	} );
+	elements.editDelete.addEventListener( 'click', async () => {
+		if ( null === state.editingId || ! window.confirm( __( 'Permanently delete this unused Draft campaign? This action cannot be undone.', 'promoguard-for-woocommerce' ) ) ) {
+			return;
+		}
+		setEditBusy( true );
+		try {
+			await request( `/campaigns/${ state.editingId }`, { method: 'DELETE' } );
+			closeEditor();
+			await loadCampaigns();
+			setNotice( __( 'Draft campaign deleted.', 'promoguard-for-woocommerce' ), 'success' );
+		} catch ( error ) {
+			setEditError( error.message );
+			setEditBusy( false );
+		}
+	} );
 	elements.toggle.addEventListener( 'click', () => setCreatePanel( elements.panel.hidden ) );
 	elements.cancel.addEventListener( 'click', () => setCreatePanel( false ) );
 	elements.name.addEventListener( 'input', () => {
