@@ -4,9 +4,8 @@
 
 Phase 2: campaigns and native WooCommerce coupons.
 
-The Phase 2 implementation is complete. Its isolated WordPress/WooCommerce
-integration gate remains pending because wp-env cannot download the configured,
-uncached sources while network access is unavailable. Docker itself is running.
+The Phase 2 implementation and its isolated WordPress/WooCommerce runtime gate
+are complete on the pinned default target.
 
 ## Completed
 
@@ -53,10 +52,14 @@ uncached sources while network access is unavailable. Docker itself is running.
   - JavaScript syntax: passed
   - Generated asset version: 1fa94770f27a
 - Docker daemon: available, server 29.6.1
-- Isolated WordPress/WooCommerce activation and REST smoke test: pending
-  - wp-env has no cached WordPress image/source.
-  - Network detection failed while resolving the configured source.
-  - The existing XAMPP WordPress database was not used.
+- Isolated WordPress/WooCommerce activation and REST smoke test: passed
+  - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3
+  - Seven PromoGuard tables present and using InnoDB
+  - Versioned migration confirmed idempotent
+  - Capability recovery, anonymous denial, campaign/coupon creation, atomic
+    assignment, explicit reassignment, archive immutability, safe deletion, and
+    native coupon preservation passed
+  - The existing XAMPP WordPress database was not used
 
 ## Maintainability and performance review
 
@@ -79,6 +82,9 @@ uncached sources while network access is unavailable. Docker itself is running.
 - Comments explain non-obvious locking, immutable archival behavior, and snapshot
   preservation. Constants centralize limits, statuses, formats, capabilities, and
   the REST namespace.
+- Runtime capability synchronization checks in-memory role state and writes only
+  missing grants, covering late WooCommerce role creation without steady-state
+  option updates.
 - No storefront or checkout queries are introduced in Phase 2.
 
 ## Compatibility baseline
@@ -89,9 +95,8 @@ uncached sources while network access is unavailable. Docker itself is running.
 | WooCommerce | 10.8-10.9 | 10.9.4 |
 | PHP | 8.1-8.4 | 8.3 |
 
-The compatibility range remains provisional until the isolated integration matrix
-runs successfully. Static analysis against pinned WordPress/WooCommerce stubs does
-not establish runtime compatibility by itself.
+The pinned default target is runtime verified. The broader declared range remains
+provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 

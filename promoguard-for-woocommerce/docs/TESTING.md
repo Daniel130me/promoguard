@@ -15,7 +15,7 @@ disposable Docker-backed development and test sites for integration work.
 | Node.js | 24.16.0 |
 | npm | Installed; invoke `npm.cmd` because local PowerShell blocks `npm.ps1` |
 | Git | 2.54.0.windows.1 |
-| Docker | CLI 29.6.1 installed; daemon unavailable during Phase 0 verification |
+| Docker | CLI/server 29.6.1; disposable wp-env runtime verified |
 | WP-CLI | Not installed globally; use the isolated environment's CLI |
 
 Start Docker before running `npm run env:start`. Confirm both development and
@@ -28,6 +28,7 @@ integration suite.
 composer check
 npm run check
 npm run env:start
+npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/runtime-smoke.php
 npm run env:stop
 ```
 
@@ -42,14 +43,15 @@ The full HPOS/legacy and Classic/Block Checkout matrix is added alongside the
 integration harness; no unsupported combination is inferred from a passing
 lint-only job.
 
-## Phase 1 verification
+## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 20 unit tests with 79 assertions. Unit coverage includes table naming, all
-seven schema definitions and indexes, option initialization, role capability
-policy, and uninstall scope safeguards.
+and 68 unit tests with 181 assertions. `npm run check` passes JavaScript syntax
+and the deterministic asset build.
 
-Activation, migration idempotency, storage-engine inspection, and opt-in uninstall
-must still be exercised against the disposable WordPress database. Those checks
-remain pending because the Docker daemon is unavailable; the existing XAMPP
-database has not been touched.
+The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP
+8.3. It verifies activation metadata, seven InnoDB tables, migration idempotency,
+role capabilities, anonymous REST denial, campaign and coupon creation, atomic
+assignment and explicit reassignment, archive immutability, safe Draft deletion,
+and preservation of the native WooCommerce coupon. The existing XAMPP database
+is never used.
