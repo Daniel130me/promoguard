@@ -2,10 +2,10 @@
 
 ## Current phase
 
-Phase 2: campaigns and native WooCommerce coupons.
+Phase 3: campaign administration.
 
-The Phase 2 implementation and its isolated WordPress/WooCommerce runtime gate
-are complete on the pinned default target.
+The first Phase 3 administration slice is complete on the pinned default target.
+Campaign editing and coupon assignment management remain in progress.
 
 ## Completed
 
@@ -41,6 +41,16 @@ are complete on the pinned default target.
 - [x] Closed request schemas for supported campaign configuration
 - [x] Structured API resources and unsafe-deletion conflict responses
 
+### Campaign administration
+
+- [x] Capability-protected PromoGuard administration menu and page
+- [x] Page-scoped, versioned JavaScript and CSS asset loading
+- [x] Bounded campaign list with status filtering and pagination
+- [x] Accessible loading, error, empty, success, and form-validation states
+- [x] Draft campaign creation with safe slug generation
+- [x] Responsive table-to-card layout for narrow WordPress admin viewports
+- [x] Pretty and plain-permalink REST URL compatibility
+
 ## Verification
 
 - composer check: passed
@@ -50,7 +60,7 @@ are complete on the pinned default target.
   - PHPUnit: 68 tests, 181 assertions
 - npm run check: passed
   - JavaScript syntax: passed
-  - Generated asset version: 1fa94770f27a
+  - Generated asset version: 767c823a01d8
 - Docker daemon: available, server 29.6.1
 - Isolated WordPress/WooCommerce activation and REST smoke test: passed
   - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3
@@ -60,6 +70,11 @@ are complete on the pinned default target.
     assignment, explicit reassignment, archive immutability, safe deletion, and
     native coupon preservation passed
   - The existing XAMPP WordPress database was not used
+- Isolated browser workflow: passed
+  - Campaign list, Draft creation, slug generation, success notice, and Draft
+    filter verified through the live WordPress administration page
+  - Plain-permalink REST requests returned 200 and browser console errors: 0
+  - Responsive campaign cards verified at a 375 x 812 viewport
 
 ## Maintainability and performance review
 
@@ -85,7 +100,13 @@ are complete on the pinned default target.
 - Runtime capability synchronization checks in-memory role state and writes only
   missing grants, covering late WooCommerce role creation without steady-state
   option updates.
-- No storefront or checkout queries are introduced in Phase 2.
+- No storefront or checkout queries are introduced through this Phase 3 slice.
+- The administration page enqueues assets only on its exact hook suffix. List
+  requests are capped at 20 records per page, rows are built in one document
+  fragment, and API content is inserted with textContent.
+- Native WordPress controls, visible labels, keyboard focus management, live
+  regions, text status labels, and reduced-motion handling keep the UI aligned
+  with WordPress and accessible without adding a frontend framework.
 
 ## Compatibility baseline
 
@@ -100,7 +121,7 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-The minimal campaign administration UI is Phase 3. Identity, eligibility,
-checkout enforcement, reservations, order lifecycle handling, refunds,
-historical indexing, analytics, privacy tools, and release hardening belong to
-later phases.
+Campaign editing, activation controls, archiving, and native coupon assignment
+management remain in Phase 3. Identity, eligibility, checkout enforcement,
+reservations, order lifecycle handling, refunds, historical indexing, analytics,
+privacy tools, and release hardening belong to later phases.
