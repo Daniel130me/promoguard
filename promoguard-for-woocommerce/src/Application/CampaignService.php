@@ -11,6 +11,7 @@ use DateTimeImmutable;
 use DomainException;
 use PromoGuard\Campaign\Campaign;
 use PromoGuard\Campaign\CampaignBuilder;
+use PromoGuard\Campaign\CampaignStatus;
 use PromoGuard\Campaign\CampaignStore;
 use PromoGuard\Promotion\CampaignPromotion;
 use PromoGuard\Promotion\CampaignPromotionStore;
@@ -199,8 +200,19 @@ final class CampaignService {
 	 *
 	 * @param int $assignment_id Assignment primary key.
 	 * @param int $campaign_id   Owning campaign ID.
+	 * @throws DomainException When the campaign is archived.
 	 */
 	public function detach_promotion( int $assignment_id, int $campaign_id ): bool {
+		$campaign = $this->campaigns->find( $campaign_id );
+
+		if ( null === $campaign ) {
+			return false;
+		}
+
+		if ( CampaignStatus::is_read_only( $campaign->status ) ) {
+			throw new DomainException( 'Archived campaigns are read-only.' );
+		}
+
 		return $this->assignments->detach( $assignment_id, $campaign_id );
 	}
 

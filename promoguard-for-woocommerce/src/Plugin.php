@@ -9,6 +9,7 @@ namespace PromoGuard;
 
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
 use PromoGuard\Activation\Installer;
+use PromoGuard\Api\CampaignController;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\Requirements;
 
@@ -47,6 +48,7 @@ final class Plugin {
 		 * @param string $version Active PromoGuard version.
 		 */
 		do_action( 'promoguard_loaded', PROMOGUARD_VERSION );
+		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 
 		if ( is_admin() ) {
 			add_action( 'admin_init', array( Installer::class, 'maybe_upgrade' ), 5 );

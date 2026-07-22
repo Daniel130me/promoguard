@@ -160,8 +160,30 @@ final class CampaignServiceTest extends TestCase {
 		$service->assign_promotion( 9, '404' );
 	}
 
-	/** Build one representative persisted campaign. */
-	private static function campaign(): Campaign {
+	/** Archived campaigns reject detachment before assignment storage changes. */
+	public function test_detach_promotion_rejects_archived_campaign(): void {
+		$campaigns = $this->createMock( CampaignStore::class );
+		$campaigns->method( 'find' )->with( 9 )->willReturn( self::campaign( CampaignStatus::ARCHIVED ) );
+
+		$assignments = $this->createMock( CampaignPromotionStore::class );
+		$assignments->expects( self::never() )->method( 'detach' );
+
+		$service = new CampaignService(
+			$campaigns,
+			$assignments,
+			$this->createMock( PromotionSource::class )
+		);
+
+		$this->expectException( DomainException::class );
+
+		$service->detach_promotion( 5, 9 );
+	}
+	/**
+	 * Build one representative persisted campaign.
+	 *
+	 * @param string $status Stored campaign status.
+	 */
+	private static function campaign( string $status = CampaignStatus::ACTIVE ): Campaign {
 		return new Campaign(
 			id: 9,
 			uuid: self::CAMPAIGN_UUID,
@@ -169,7 +191,7 @@ final class CampaignServiceTest extends TestCase {
 			slug: 'customer-acquisition',
 			description: '',
 			goal: null,
-			status: CampaignStatus::ACTIVE,
+			status: $status,
 			priority: 0,
 			starts_at_gmt: null,
 			ends_at_gmt: null,
