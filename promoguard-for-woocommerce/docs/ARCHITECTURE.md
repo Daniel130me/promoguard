@@ -33,8 +33,23 @@ Order access will use WooCommerce CRUD APIs exclusively so HPOS and legacy order
 storage can share the same implementation. SQL is reserved for indexed
 PromoGuard-owned tables and must always be prepared.
 
+## Schema and lifecycle foundations
+
+Phase 1 introduces seven PromoGuard-owned tables for campaigns, promotion
+assignments, customer identities, campaign state, usage, and decision records.
+Table naming is centralized, the schema is applied through `dbDelta`, and the
+stored schema version makes future migrations incremental and administrator-only.
+
+Activation creates non-autoloaded options, stable installation identifiers, and
+role capabilities. Storage verification checks all expected tables in one bounded
+metadata query and fails closed unless the lock-sensitive state and usage tables
+use InnoDB. Uninstall preserves data by default and removes only centralized
+PromoGuard tables, options, and capabilities after explicit opt-in.
+
 ## Performance baseline
 
-Phase 0 performs constant-time version checks and no database queries. Later
-checkout work must resolve assignments and customer campaign state through
-bounded indexed lookups; historical order scans belong only in background jobs.
+The storefront still performs constant-time version checks and no PromoGuard
+database queries. Installation uses one bounded metadata query for seven known
+tables. Later checkout work must resolve assignments and customer campaign state
+through bounded indexed lookups; historical order scans belong only in background
+jobs.

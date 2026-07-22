@@ -9,3 +9,14 @@
  */
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
+
+$promoguard_autoloader = __DIR__ . '/vendor/autoload.php';
+
+// An incomplete package must preserve data rather than risk a partial cleanup.
+if ( ! is_readable( $promoguard_autoloader ) ) {
+	return;
+}
+
+require_once $promoguard_autoloader;
+
+PromoGuard\Activation\Uninstaller::uninstall();

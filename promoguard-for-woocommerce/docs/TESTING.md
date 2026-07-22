@@ -41,3 +41,15 @@ The declared range is WordPress 6.9-7.0, WooCommerce 10.8-10.9, and PHP 8.1-8.4.
 The full HPOS/legacy and Classic/Block Checkout matrix is added alongside the
 integration harness; no unsupported combination is inferred from a passing
 lint-only job.
+
+## Phase 1 verification
+
+`composer check` passes syntax validation, WordPress coding standards, PHPStan,
+and 20 unit tests with 79 assertions. Unit coverage includes table naming, all
+seven schema definitions and indexes, option initialization, role capability
+policy, and uninstall scope safeguards.
+
+Activation, migration idempotency, storage-engine inspection, and opt-in uninstall
+must still be exercised against the disposable WordPress database. Those checks
+remain pending because the Docker daemon is unavailable; the existing XAMPP
+database has not been touched.

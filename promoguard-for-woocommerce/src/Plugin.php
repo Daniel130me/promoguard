@@ -8,6 +8,8 @@
 namespace PromoGuard;
 
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
+use PromoGuard\Activation\Installer;
+use PromoGuard\Support\Options;
 use PromoGuard\Support\Requirements;
 
 /**
@@ -45,6 +47,11 @@ final class Plugin {
 		 * @param string $version Active PromoGuard version.
 		 */
 		do_action( 'promoguard_loaded', PROMOGUARD_VERSION );
+
+		if ( is_admin() ) {
+			add_action( 'admin_init', array( Installer::class, 'maybe_upgrade' ), 5 );
+			add_action( 'admin_notices', array( self::class, 'render_storage_notice' ) );
+		}
 	}
 
 	/**
@@ -59,6 +66,17 @@ final class Plugin {
 		FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', PROMOGUARD_PLUGIN_FILE, true );
 	}
 
+	/** Show a critical notice when lock-safe checkout storage is unavailable. */
+	public static function render_storage_notice(): void {
+		if ( Options::storage_is_supported() || ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
+
+		printf(
+			'<div class="notice notice-error"><p>%s</p></div>',
+			esc_html__( 'PromoGuard requires InnoDB storage for customer campaign state and usage records. Protected promotions remain unavailable until storage is repaired.', 'promoguard-for-woocommerce' )
+		);
+	}
 	/**
 	 * Show a concise dependency error to users who can manage plugins.
 	 *

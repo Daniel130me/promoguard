@@ -43,4 +43,6 @@ if ( ! is_readable( $promoguard_autoloader ) ) {
 
 require_once $promoguard_autoloader;
 
+register_activation_hook( __FILE__, array( PromoGuard\Activation\Activator::class, 'activate' ) );
+
 PromoGuard\Plugin::register();

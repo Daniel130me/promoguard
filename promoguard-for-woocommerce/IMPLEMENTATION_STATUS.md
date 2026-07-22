@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 0: environment, repository, and bootstrap.
+Phase 1: schema, installation, and lifecycle foundations.
 
 Implementation is complete. The isolated activation smoke test remains pending
 because the local Docker daemon is unavailable.
@@ -16,10 +16,16 @@ because the local Docker daemon is unavailable.
 - [x] HPOS and Cart/Checkout Blocks compatibility declarations
 - [x] Isolated WordPress/WooCommerce environment configuration
 - [x] Initial CI workflow and unit-test foundation
+- [x] Seven plugin-owned database tables and indexed schema definitions
+- [x] Versioned activation and administrator-only migration runner
+- [x] InnoDB storage verification and fail-closed health metadata
+- [x] Stable installation UUID, HMAC key, and non-autoloaded plugin options
+- [x] Administrator and Shop Manager capability assignments
+- [x] Explicit opt-in uninstall cleanup scoped to PromoGuard-owned data
 
 ## Verification
 
-- `composer check`: passed (syntax, PHPCS, PHPStan, 8 tests/15 assertions)
+- `composer check`: passed (syntax, PHPCS, PHPStan, 20 tests/79 assertions)
 - `npm ci --dry-run`: passed against the dependency-free lockfile
 - `npm run check`: passed; generated asset version `1fa94770f27a`
 - Isolated WordPress activation: pending; Docker CLI cannot reach a running daemon
@@ -34,8 +40,12 @@ The existing XAMPP WordPress database was not used for automated testing.
   magic values and make later services straightforward to add.
 - Comments explain the non-obvious compatibility boundary and deterministic
   asset cache version; no empty domain interfaces or placeholder classes exist.
-- Phase 0 performs constant-time checks and zero database queries. No historical
-  order scans, wildcard lookups, or unbounded work were introduced.
+- Phase 1 adds no storefront queries. Installation performs one bounded metadata
+  query for seven known tables after `dbDelta`; runtime upgrade checks are
+  administrator-only.
+- Tables use targeted compound indexes and omit database foreign keys so WordPress
+  migrations remain portable. No historical order scans or unbounded work were
+  introduced.
 - Frontend dependencies are deferred until an administration UI exists. The
   current dependency-free asset build keeps installs and CI fast.
 - [x] Architecture and testing documentation
@@ -54,5 +64,5 @@ because an allowed-failure CI job can start with it.
 
 ## Not implemented
 
-Database tables, campaigns, coupon assignments, identity, checkout enforcement,
-reservations, analytics, and administration belong to later phases.
+Campaigns, coupon assignments, identity, checkout enforcement, reservations,
+analytics, and administration belong to later phases.

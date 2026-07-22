@@ -19,9 +19,11 @@ final class StorageEngineVerifier {
 	public function is_supported(): bool {
 		global $wpdb;
 
-		$required_tables = TableNames::from_wordpress()->transactional();
-		$placeholders    = implode( ', ', array_fill( 0, count( $required_tables ), '%s' ) );
-		$parameters      = array_merge( array( $wpdb->dbname ), $required_tables );
+		$table_names          = TableNames::from_wordpress();
+		$required_tables      = $table_names->all();
+		$transactional_tables = array_flip( $table_names->transactional() );
+		$placeholders         = implode( ', ', array_fill( 0, count( $required_tables ), '%s' ) );
+		$parameters           = array_merge( array( $wpdb->dbname ), $required_tables );
 
 		// Table identifiers come only from TableNames; values remain prepared.
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Dynamically sized placeholder list contains only literal %s tokens.
@@ -41,7 +43,13 @@ final class StorageEngineVerifier {
 		}
 
 		foreach ( $rows as $row ) {
-			if ( 'InnoDB' !== ( $row['ENGINE'] ?? null ) ) {
+			$table_name = $row['TABLE_NAME'] ?? null;
+
+			if (
+				is_string( $table_name )
+				&& isset( $transactional_tables[ $table_name ] )
+				&& 'InnoDB' !== ( $row['ENGINE'] ?? null )
+			) {
 				return false;
 			}
 		}
