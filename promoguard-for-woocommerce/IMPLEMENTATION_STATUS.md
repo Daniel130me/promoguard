@@ -2,12 +2,15 @@
 
 ## Current phase
 
-Phase 1: schema, installation, and lifecycle foundations.
+Phase 2: campaigns and native WooCommerce coupons.
 
-Implementation is complete. The isolated activation smoke test remains pending
-because the local Docker daemon is unavailable.
+The Phase 2 implementation is complete. Its isolated WordPress/WooCommerce
+integration gate remains pending because wp-env cannot download the configured,
+uncached sources while network access is unavailable. Docker itself is running.
 
 ## Completed
+
+### Foundations
 
 - [x] Plugin directory boundary and metadata
 - [x] Composer PSR-4 autoloading and PHP quality tooling
@@ -23,32 +26,60 @@ because the local Docker daemon is unavailable.
 - [x] Administrator and Shop Manager capability assignments
 - [x] Explicit opt-in uninstall cleanup scoped to PromoGuard-owned data
 
+### Campaigns and native coupons
+
+- [x] Immutable campaign aggregate and supported configuration policy
+- [x] Schedule-derived campaign status and archived read-only behavior
+- [x] Strict campaign input builder with partial-update merging
+- [x] Bounded, indexed campaign persistence and safe Draft deletion
+- [x] Native WC_Coupon adapter using WooCommerce public CRUD APIs
+- [x] Bounded coupon search and basic native coupon creation
+- [x] Immutable campaign-promotion assignment snapshots
+- [x] Atomic attachment and explicit reassignment by source identity
+- [x] Detachment that preserves coupons, usages, and decision snapshots
+- [x] Transport-neutral campaign application service
+- [x] Capability-protected promoguard/v1 REST endpoints
+- [x] Closed request schemas for supported campaign configuration
+- [x] Structured API resources and unsafe-deletion conflict responses
+
 ## Verification
 
-- `composer check`: passed (syntax, PHPCS, PHPStan, 20 tests/79 assertions)
-- `npm ci --dry-run`: passed against the dependency-free lockfile
-- `npm run check`: passed; generated asset version `1fa94770f27a`
-- Isolated WordPress activation: pending; Docker CLI cannot reach a running daemon
-
-The existing XAMPP WordPress database was not used for automated testing.
+- composer check: passed
+  - PHP syntax: passed
+  - WordPress Coding Standards: passed
+  - PHPStan: passed
+  - PHPUnit: 68 tests, 181 assertions
+- npm run check: passed
+  - JavaScript syntax: passed
+  - Generated asset version: 1fa94770f27a
+- Docker daemon: available, server 29.6.1
+- Isolated WordPress/WooCommerce activation and REST smoke test: pending
+  - wp-env has no cached WordPress image/source.
+  - Network detection failed while resolving the configured source.
+  - The existing XAMPP WordPress database was not used.
 
 ## Maintainability and performance review
 
-- Bootstrap responsibilities are split between coordination and a unit-testable
-  requirement policy; no business logic is placed in the plugin entry file.
-- PSR-4 naming, centralized compatibility constants, and focused methods avoid
-  magic values and make later services straightforward to add.
-- Comments explain the non-obvious compatibility boundary and deterministic
-  asset cache version; no empty domain interfaces or placeholder classes exist.
-- Phase 1 adds no storefront queries. Installation performs one bounded metadata
-  query for seven known tables after `dbDelta`; runtime upgrade checks are
-  administrator-only.
-- Tables use targeted compound indexes and omit database foreign keys so WordPress
-  migrations remain portable. No historical order scans or unbounded work were
-  introduced.
-- Frontend dependencies are deferred until an administration UI exists. The
-  current dependency-free asset build keeps installs and CI fast.
-- [x] Architecture and testing documentation
+- REST controllers contain transport concerns only. Campaign construction,
+  persistence orchestration, response mapping, and route schemas are separate,
+  focused dependencies.
+- Every administration endpoint requires manage_promoguard. Mutation schemas
+  accept only supported campaign configuration keys, sanitize administrator text,
+  and cap list requests at 100 records.
+- Campaign creation returns the inserted representation without a read-after-write.
+  Updates load the campaign once and pass that snapshot to the optimistic update.
+- Campaign and assignment reads select explicit columns and use primary, unique,
+  or campaign indexes. Coupon search is capped and uses WooCommerce/WordPress
+  public APIs.
+- Assignment changes use a short InnoDB transaction with campaign/source locking.
+  No remote work occurs inside the transaction.
+- Permanent deletion is one conditional, primary-key-scoped query and is limited
+  to unused Draft campaigns. Coupons, orders, usages, and decision snapshots are
+  never deleted by campaign administration.
+- Comments explain non-obvious locking, immutable archival behavior, and snapshot
+  preservation. Constants centralize limits, statuses, formats, capabilities, and
+  the REST namespace.
+- No storefront or checkout queries are introduced in Phase 2.
 
 ## Compatibility baseline
 
@@ -58,11 +89,13 @@ The existing XAMPP WordPress database was not used for automated testing.
 | WooCommerce | 10.8-10.9 | 10.9.4 |
 | PHP | 8.1-8.4 | 8.3 |
 
-The compatibility range is intentionally narrow until the integration matrix
-has run successfully. A version in this table is not considered supported only
-because an allowed-failure CI job can start with it.
+The compatibility range remains provisional until the isolated integration matrix
+runs successfully. Static analysis against pinned WordPress/WooCommerce stubs does
+not establish runtime compatibility by itself.
 
 ## Not implemented
 
-Campaigns, coupon assignments, identity, checkout enforcement, reservations,
-analytics, and administration belong to later phases.
+The minimal campaign administration UI is Phase 3. Identity, eligibility,
+checkout enforcement, reservations, order lifecycle handling, refunds,
+historical indexing, analytics, privacy tools, and release hardening belong to
+later phases.
