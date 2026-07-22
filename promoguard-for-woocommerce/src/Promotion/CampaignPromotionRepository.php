@@ -17,7 +17,7 @@ use RuntimeException;
 use Throwable;
 
 /** Owns atomic attachment, reassignment, and detachment operations. */
-final class CampaignPromotionRepository {
+final class CampaignPromotionRepository implements CampaignPromotionStore {
 	private const DATE_FORMAT   = 'Y-m-d H:i:s';
 	private const MAX_PAGE_SIZE = 100;
 	private const COLUMNS       = 'id, uuid, campaign_id, source, source_type, external_id, external_code, channel, label, sort_order, settings, created_at_gmt, updated_at_gmt';

@@ -12,7 +12,7 @@ use PromoGuard\Support\TableNames;
 use RuntimeException;
 
 /** Provides bounded persistence operations for PromoGuard campaigns. */
-final class CampaignRepository {
+final class CampaignRepository implements CampaignStore {
 	private const MAX_PAGE_SIZE = 100;
 
 	private const SELECT_COLUMNS = 'id, uuid, name, slug, description, goal, status, priority, starts_at_gmt, ends_at_gmt, usage_rules, conflict_rules, settings, created_by, created_at_gmt, updated_at_gmt';
@@ -77,16 +77,17 @@ final class CampaignRepository {
 	/**
 	 * Update a mutable campaign.
 	 *
-	 * @param Campaign $campaign Validated persisted campaign.
+	 * @param Campaign      $campaign Validated persisted campaign.
+	 * @param Campaign|null $current  Previously loaded campaign, when available.
 	 * @throws DomainException  When an archived campaign is edited.
 	 * @throws RuntimeException When persistence fails.
 	 */
-	public function update( Campaign $campaign ): bool {
+	public function update( Campaign $campaign, ?Campaign $current = null ): bool {
 		if ( null === $campaign->id ) {
 			throw new RuntimeException( 'An unsaved campaign cannot be updated.' );
 		}
 
-		$current = $this->find( $campaign->id );
+		$current ??= $this->find( $campaign->id );
 
 		if ( null === $current ) {
 			return false;
