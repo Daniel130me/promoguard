@@ -296,7 +296,7 @@ final class CampaignPromotionRepository implements CampaignPromotionStore {
 	private function to_row( CampaignPromotion $assignment ): array {
 		try {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- JSON_THROW_ON_ERROR is required to avoid silently persisting invalid settings.
-			$settings = json_encode( $assignment->settings, JSON_THROW_ON_ERROR );
+			$settings = json_encode( (object) $assignment->settings, JSON_THROW_ON_ERROR );
 		} catch ( JsonException $exception ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Previous exception is diagnostic context, never rendered.
 			throw new RuntimeException( 'Promotion assignment settings could not be encoded.', 0, $exception );
