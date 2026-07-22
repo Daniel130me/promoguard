@@ -78,7 +78,9 @@ final class Capabilities {
 		}
 
 		foreach ( $capabilities as $capability ) {
-			$role->add_cap( $capability );
+			if ( ! $role->has_cap( $capability ) ) {
+				$role->add_cap( $capability );
+			}
 		}
 	}
 }

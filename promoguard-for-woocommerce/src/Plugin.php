@@ -10,6 +10,7 @@ namespace PromoGuard;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
 use PromoGuard\Activation\Installer;
 use PromoGuard\Api\CampaignController;
+use PromoGuard\Support\Capabilities;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\Requirements;
 
@@ -41,6 +42,9 @@ final class Plugin {
 
 			return;
 		}
+
+		// WooCommerce may create its Shop Manager role after PromoGuard activates.
+		Capabilities::install();
 
 		/**
 		 * Fires after PromoGuard has passed dependency checks.
