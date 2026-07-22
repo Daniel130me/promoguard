@@ -1,8 +1,262 @@
-/**
- * PromoGuard administration entry point.
- *
- * The administration application is introduced in a later phase. Keeping the
- * build entry side-effect free lets Phase 0 verify the JavaScript toolchain
- * without changing any WordPress screens.
- */
-export const PROMOGUARD_ADMIN_ROOT_ID = 'promoguard-admin';
+/** PromoGuard campaign administration application. */
+( function () {
+	'use strict';
+
+	const config = window.PromoGuardAdmin;
+	if ( ! config || ! window.wp?.i18n ) {
+		return;
+	}
+
+	const root = document.getElementById( config.rootId );
+	if ( ! root ) {
+		return;
+	}
+
+	const { __, sprintf } = window.wp.i18n;
+	const byId = ( id ) => document.getElementById( id );
+	const elements = {
+		cancel: byId( 'promoguard-create-cancel' ),
+		empty: byId( 'promoguard-empty' ),
+		filter: byId( 'promoguard-status-filter' ),
+		form: byId( 'promoguard-create-form' ),
+		formError: byId( 'promoguard-form-error' ),
+		name: byId( 'promoguard-name' ),
+		next: byId( 'promoguard-next' ),
+		notice: byId( 'promoguard-notice' ),
+		pageStatus: byId( 'promoguard-page-status' ),
+		panel: byId( 'promoguard-create-panel' ),
+		previous: byId( 'promoguard-previous' ),
+		refresh: byId( 'promoguard-refresh' ),
+		resultCount: byId( 'promoguard-result-count' ),
+		rows: byId( 'promoguard-campaign-rows' ),
+		slug: byId( 'promoguard-slug' ),
+		table: byId( 'promoguard-campaign-table' ),
+		toggle: byId( 'promoguard-create-toggle' ),
+	};
+	const state = { loading: false, page: 1, pages: 1, perPage: 20, slugDirty: false, status: '' };
+	const statusLabels = {
+		active: __( 'Active', 'promoguard-for-woocommerce' ),
+		archived: __( 'Archived', 'promoguard-for-woocommerce' ),
+		draft: __( 'Draft', 'promoguard-for-woocommerce' ),
+		expired: __( 'Expired', 'promoguard-for-woocommerce' ),
+		paused: __( 'Paused', 'promoguard-for-woocommerce' ),
+		scheduled: __( 'Scheduled', 'promoguard-for-woocommerce' ),
+	};
+
+	function setNotice( message, type = 'error' ) {
+		elements.notice.classList.remove( 'notice-error', 'notice-success' );
+		elements.notice.classList.add( `notice-${ type }` );
+		const paragraph = document.createElement( 'p' );
+		paragraph.textContent = message;
+		elements.notice.replaceChildren( paragraph );
+		elements.notice.hidden = false;
+	}
+
+	function clearNotice() {
+		elements.notice.hidden = true;
+		elements.notice.replaceChildren();
+	}
+
+	function buildRequestUrl( path ) {
+		const url = new URL( config.restUrl, window.location.origin );
+		const [ routePath, query = '' ] = path.split( '?' );
+		const restRoute = url.searchParams.get( 'rest_route' );
+
+		// Plain permalinks encode the REST route in the query string; pretty permalinks use the pathname.
+		if ( null !== restRoute ) {
+			url.searchParams.set( 'rest_route', `${ restRoute.replace( /\/$/, '' ) }${ routePath }` );
+		} else {
+			url.pathname = `${ url.pathname.replace( /\/$/, '' ) }${ routePath }`;
+		}
+
+		new URLSearchParams( query ).forEach( ( value, key ) => url.searchParams.set( key, value ) );
+
+		return url.toString();
+	}
+
+	function setFormError( message = '' ) {
+		elements.formError.textContent = message;
+		elements.formError.hidden = ! message;
+	}
+
+	async function request( path, options = {} ) {
+		const response = await window.fetch( buildRequestUrl( path ), {
+			...options,
+			credentials: 'same-origin',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': config.nonce,
+				...options.headers,
+			},
+		} );
+		const data = 204 === response.status ? null : await response.json();
+		if ( ! response.ok ) {
+			throw new Error( data?.message || __( 'PromoGuard could not complete the request.', 'promoguard-for-woocommerce' ) );
+		}
+		return data;
+	}
+
+	function setLoading( loading ) {
+		state.loading = loading;
+		root.classList.toggle( 'is-loading', loading );
+		elements.table.setAttribute( 'aria-busy', String( loading ) );
+		elements.filter.disabled = loading;
+		elements.refresh.disabled = loading;
+		elements.previous.disabled = loading || state.page <= 1;
+		elements.next.disabled = loading || state.page >= state.pages;
+	}
+
+	function createCell( label, className = '' ) {
+		const cell = document.createElement( 'td' );
+		cell.dataset.label = label;
+		cell.className = className;
+		return cell;
+	}
+
+	function formatSchedule( campaign ) {
+		const formatter = new Intl.DateTimeFormat( undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' } );
+		const start = campaign.starts_at_gmt ? formatter.format( new Date( campaign.starts_at_gmt ) ) : null;
+		const end = campaign.ends_at_gmt ? formatter.format( new Date( campaign.ends_at_gmt ) ) : null;
+		if ( start && end ) {
+			return sprintf( __( '%1$s to %2$s (UTC)', 'promoguard-for-woocommerce' ), start, end );
+		}
+		if ( start ) {
+			return sprintf( __( 'Starts %s (UTC)', 'promoguard-for-woocommerce' ), start );
+		}
+		if ( end ) {
+			return sprintf( __( 'Ends %s (UTC)', 'promoguard-for-woocommerce' ), end );
+		}
+		return __( 'No schedule', 'promoguard-for-woocommerce' );
+	}
+
+	function renderRows( campaigns ) {
+		const fragment = document.createDocumentFragment();
+		campaigns.forEach( ( campaign ) => {
+			const row = document.createElement( 'tr' );
+			const identity = createCell( __( 'Campaign', 'promoguard-for-woocommerce' ), 'promoguard-admin__identity' );
+			const name = document.createElement( 'strong' );
+			const slug = document.createElement( 'code' );
+			name.textContent = campaign.name;
+			slug.textContent = campaign.slug;
+			identity.append( name, slug );
+
+			const status = createCell( __( 'Status', 'promoguard-for-woocommerce' ) );
+			const badge = document.createElement( 'span' );
+			const effective = statusLabels[ campaign.effective_status ] ? campaign.effective_status : campaign.status;
+			badge.className = `promoguard-status promoguard-status--${ effective }`;
+			badge.textContent = statusLabels[ effective ] || effective;
+			status.append( badge );
+
+			const schedule = createCell( __( 'Schedule', 'promoguard-for-woocommerce' ) );
+			schedule.textContent = formatSchedule( campaign );
+			const priority = createCell( __( 'Priority', 'promoguard-for-woocommerce' ), 'promoguard-admin__number' );
+			priority.textContent = new Intl.NumberFormat().format( campaign.priority );
+			row.append( identity, status, schedule, priority );
+			fragment.append( row );
+		} );
+		elements.rows.replaceChildren( fragment );
+		elements.table.hidden = 0 === campaigns.length;
+		elements.empty.hidden = 0 !== campaigns.length;
+	}
+
+	function renderPagination( data ) {
+		state.pages = Math.max( 1, Math.ceil( data.total / data.per_page ) );
+		elements.resultCount.textContent = sprintf( __( '%d campaigns', 'promoguard-for-woocommerce' ), data.total );
+		elements.pageStatus.textContent = sprintf( __( 'Page %1$d of %2$d', 'promoguard-for-woocommerce' ), state.page, state.pages );
+	}
+
+	async function loadCampaigns() {
+		setLoading( true );
+		clearNotice();
+		const query = new URLSearchParams( { page: String( state.page ), per_page: String( state.perPage ) } );
+		if ( state.status ) {
+			query.set( 'status', state.status );
+		}
+		try {
+			const data = await request( `/campaigns?${ query.toString() }` );
+			renderRows( data.items );
+			renderPagination( data );
+		} catch ( error ) {
+			setNotice( error.message );
+			elements.resultCount.textContent = __( 'Campaigns could not be loaded.', 'promoguard-for-woocommerce' );
+		} finally {
+			setLoading( false );
+		}
+	}
+
+	function slugify( value ) {
+		return value.normalize( 'NFKD' ).replace( /[\u0300-\u036f]/g, '' ).toLowerCase().trim()
+			.replace( /[^a-z0-9]+/g, '-' ).replace( /^-+|-+$/g, '' ).slice( 0, 190 );
+	}
+
+	function setCreatePanel( open ) {
+		elements.panel.hidden = ! open;
+		elements.toggle.setAttribute( 'aria-expanded', String( open ) );
+		if ( open ) {
+			elements.name.focus();
+		} else {
+			elements.toggle.focus();
+			setFormError();
+		}
+	}
+
+	elements.toggle.addEventListener( 'click', () => setCreatePanel( elements.panel.hidden ) );
+	elements.cancel.addEventListener( 'click', () => setCreatePanel( false ) );
+	elements.name.addEventListener( 'input', () => {
+		if ( ! state.slugDirty ) {
+			elements.slug.value = slugify( elements.name.value );
+		}
+	} );
+	elements.slug.addEventListener( 'input', () => { state.slugDirty = true; } );
+	elements.filter.addEventListener( 'change', () => {
+		state.page = 1;
+		state.status = elements.filter.value;
+		loadCampaigns();
+	} );
+	elements.refresh.addEventListener( 'click', loadCampaigns );
+	elements.previous.addEventListener( 'click', () => {
+		if ( ! state.loading && state.page > 1 ) {
+			state.page -= 1;
+			loadCampaigns();
+		}
+	} );
+	elements.next.addEventListener( 'click', () => {
+		if ( ! state.loading && state.page < state.pages ) {
+			state.page += 1;
+			loadCampaigns();
+		}
+	} );
+	elements.form.addEventListener( 'submit', async ( event ) => {
+		event.preventDefault();
+		setFormError();
+		if ( ! elements.form.reportValidity() ) {
+			return;
+		}
+		const submit = elements.form.querySelector( '[type="submit"]' );
+		const formData = new window.FormData( elements.form );
+		submit.disabled = true;
+		try {
+			await request( '/campaigns', {
+				body: JSON.stringify( {
+					description: String( formData.get( 'description' ) || '' ).trim(),
+					name: String( formData.get( 'name' ) || '' ).trim(),
+					slug: String( formData.get( 'slug' ) || '' ).trim(),
+				} ),
+				method: 'POST',
+			} );
+			elements.form.reset();
+			state.slugDirty = false;
+			state.page = 1;
+			setCreatePanel( false );
+			await loadCampaigns();
+			setNotice( __( 'Campaign created.', 'promoguard-for-woocommerce' ), 'success' );
+		} catch ( error ) {
+			setFormError( error.message );
+		} finally {
+			submit.disabled = false;
+		}
+	} );
+
+	loadCampaigns();
+}() );
