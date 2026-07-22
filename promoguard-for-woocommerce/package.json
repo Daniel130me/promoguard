@@ -1,0 +1,18 @@
+{
+  "name": "promoguard-for-woocommerce",
+  "version": "0.1.0-dev",
+  "private": true,
+  "description": "Development tooling and administration assets for PromoGuard.",
+  "scripts": {
+    "build": "node tools/build-assets.mjs",
+    "lint:js": "node --check assets/src/index.js && node --check tools/build-assets.mjs",
+    "check": "npm run lint:js && npm run build",
+    "env:start": "npx --yes @wordpress/env@10.30.0 start",
+    "env:stop": "npx --yes @wordpress/env@10.30.0 stop",
+    "env:clean": "npx --yes @wordpress/env@10.30.0 clean all"
+  },
+  "engines": {
+    "node": ">=20 <25",
+    "npm": ">=10"
+  }
+}

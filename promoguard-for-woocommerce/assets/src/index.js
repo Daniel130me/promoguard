@@ -1,0 +1,8 @@
+/**
+ * PromoGuard administration entry point.
+ *
+ * The administration application is introduced in a later phase. Keeping the
+ * build entry side-effect free lets Phase 0 verify the JavaScript toolchain
+ * without changing any WordPress screens.
+ */
+export const PROMOGUARD_ADMIN_ROOT_ID = 'promoguard-admin';
