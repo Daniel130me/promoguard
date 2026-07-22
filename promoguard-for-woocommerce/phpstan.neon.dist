@@ -3,6 +3,8 @@ includes:
 
 parameters:
   level: 8
+  bootstrapFiles:
+    - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
   paths:
     - src
     - promoguard-for-woocommerce.php

@@ -8,6 +8,7 @@
   },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^1.1",
+    "php-stubs/woocommerce-stubs": "10.9.4",
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "phpstan/phpstan": "^2.1",
     "phpunit/phpunit": "^10.5",
@@ -34,7 +35,7 @@
   "scripts": {
     "lint:php": "@php tools/php-lint.php",
     "lint:phpcs": "phpcs",
-    "analyse": "phpstan analyse",
+    "analyse": "phpstan analyse --memory-limit=1G",
     "test:unit": "phpunit --testsuite unit",
     "check": [
       "@lint:php",
