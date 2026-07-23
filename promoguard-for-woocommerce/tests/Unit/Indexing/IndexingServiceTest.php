@@ -113,6 +113,38 @@ final class IndexingServiceTest extends TestCase {
 		self::assertSame( 1, $paused->processed );
 		self::assertSame( 2, $paused->page );
 	}
+	/** Completed order failures retry as one normalized targeted job. */
+	public function test_completed_order_errors_retry_only_failed_orders(): void {
+		$service = new IndexingService( new InMemoryIndexingJobStore() );
+		$service->start( self::JOB_ID, $this->time( '10:00:00' ) );
+		$service->claim( self::JOB_ID, $this->time( '10:01:00' ) );
+		$service->record_batch(
+			self::JOB_ID,
+			new IndexingBatch(
+				2,
+				0,
+				0,
+				array(
+					array(
+						'order_id' => 90,
+						'message'  => 'Order failed.',
+					),
+					array(
+						'order_id' => 80,
+						'message'  => 'Order failed.',
+					),
+				),
+				false
+			),
+			$this->time( '10:02:00' )
+		);
+
+		$retry = $service->retry( $this->time( '10:03:00' ) );
+
+		self::assertSame( array( 80, 90 ), $retry->target_order_ids );
+		self::assertSame( 0, $retry->processed );
+		self::assertSame( array(), $retry->errors );
+	}
 	/** Concurrent active job creation is rejected. */
 	public function test_second_active_job_is_rejected(): void {
 		$service = new IndexingService( new InMemoryIndexingJobStore() );

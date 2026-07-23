@@ -20,6 +20,11 @@ final class IndexingService {
 	 */
 	public function __construct( private readonly IndexingJobStore $store ) {}
 
+	/** Return the current or most recently completed job. */
+	public function current(): ?IndexingJob {
+		return $this->store->current();
+	}
+
 	/**
 	 * Start a full scan or a bounded targeted rebuild.
 	 *
@@ -114,13 +119,44 @@ final class IndexingService {
 	 */
 	public function retry( DateTimeImmutable $now_gmt ): IndexingJob {
 		$job = $this->require_current();
-		if ( IndexingStatus::FAILED !== $job->status ) {
-			throw new DomainException( 'Only a failed indexing job can be retried.' );
+		if ( IndexingStatus::FAILED === $job->status ) {
+			return $this->save_copy( $job, IndexingStatus::QUEUED, $now_gmt );
 		}
 
-		return $this->save_copy( $job, IndexingStatus::QUEUED, $now_gmt );
-	}
+		if ( IndexingStatus::COMPLETED !== $job->status || 0 === $job->failed ) {
+			throw new DomainException( 'Only a failed job or completed job with order errors can be retried.' );
+		}
 
+		$targets = array_values(
+			array_unique(
+				array_filter(
+					array_column( $job->errors, 'order_id' ),
+					static fn( int $order_id ): bool => $order_id > 0
+				)
+			)
+		);
+		sort( $targets, SORT_NUMERIC );
+		if ( array() === $targets ) {
+			throw new DomainException( 'The indexing failure has no retryable order IDs.' );
+		}
+
+		$retry = new IndexingJob(
+			$job->id,
+			IndexingStatus::QUEUED,
+			$targets,
+			$job->batch_size,
+			1,
+			0,
+			0,
+			0,
+			0,
+			array(),
+			$job->created_at_gmt,
+			$now_gmt
+		);
+		$this->store->save( $retry );
+		return $retry;
+	}
 	/**
 	 * Restart a terminal or paused job from its first page with empty progress.
 	 *
@@ -199,7 +235,7 @@ final class IndexingService {
 	 */
 	public function fail( string $job_id, string $message, DateTimeImmutable $now_gmt ): IndexingJob {
 		$job = $this->require_job( $job_id );
-		if ( IndexingStatus::RUNNING !== $job->status ) {
+		if ( ! in_array( $job->status, array( IndexingStatus::RUNNING, IndexingStatus::PAUSED ), true ) ) {
 			throw new DomainException( 'Only a running indexing job can fail.' );
 		}
 

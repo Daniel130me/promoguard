@@ -9,14 +9,10 @@ namespace PromoGuard\Application;
 
 use DateTimeImmutable;
 use PromoGuard\Campaign\Campaign;
-use PromoGuard\Customer\CustomerRepository;
-use PromoGuard\Customer\EmailNormalizer;
-use PromoGuard\Customer\IdentifierHasher;
 use PromoGuard\Customer\IdentityResolver;
 use PromoGuard\Eligibility\CustomerCampaignStateRepository;
 use PromoGuard\Eligibility\EligibilityContext;
 use PromoGuard\Eligibility\EligibilityEngine;
-use PromoGuard\Support\Options;
 use RuntimeException;
 
 /** Coordinates safe identity resolution with the shared campaign policy engine. */
@@ -38,16 +34,7 @@ final class EligibilityService implements EligibilityEvaluator {
 	 * @throws RuntimeException When the persistent HMAC key is unavailable.
 	 */
 	public static function from_wordpress(): self {
-		$hash_key = get_option( Options::HASH_KEY, false );
-		if ( ! is_string( $hash_key ) || '' === $hash_key ) {
-			throw new RuntimeException( 'PromoGuard customer identity key is unavailable.' );
-		}
-
-		$identities = new IdentityResolver(
-			CustomerRepository::from_wordpress(),
-			new EmailNormalizer(),
-			new IdentifierHasher( $hash_key )
-		);
+		$identities = IdentityResolver::from_wordpress();
 		$engine     = new EligibilityEngine( CustomerCampaignStateRepository::from_wordpress() );
 
 		return new self( $identities, $engine );

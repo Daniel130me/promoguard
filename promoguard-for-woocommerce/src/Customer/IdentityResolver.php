@@ -7,6 +7,9 @@
 
 namespace PromoGuard\Customer;
 
+use PromoGuard\Support\Options;
+use RuntimeException;
+
 /** Resolves authenticated users before considering a normalized guest email. */
 final class IdentityResolver {
 	/**
@@ -21,6 +24,24 @@ final class IdentityResolver {
 		private readonly EmailNormalizer $normalizer,
 		private readonly IdentifierHasher $hasher
 	) {}
+
+	/**
+	 * Build the production identity resolver for the active site.
+	 *
+	 * @throws RuntimeException When the persistent HMAC key is unavailable.
+	 */
+	public static function from_wordpress(): self {
+		$hash_key = get_option( Options::HASH_KEY, false );
+		if ( ! is_string( $hash_key ) || '' === $hash_key ) {
+			throw new RuntimeException( 'PromoGuard customer identity key is unavailable.' );
+		}
+
+		return new self(
+			CustomerRepository::from_wordpress(),
+			new EmailNormalizer(),
+			new IdentifierHasher( $hash_key )
+		);
+	}
 
 	/**
 	 * Resolve an authenticated user or guest email.

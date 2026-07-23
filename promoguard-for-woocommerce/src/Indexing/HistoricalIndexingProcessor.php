@@ -13,7 +13,7 @@ use PromoGuard\Reservation\UsageStatus;
 use Throwable;
 
 /** Reconstructs consumed usages from one bounded source page. */
-final class HistoricalIndexingProcessor {
+final class HistoricalIndexingProcessor implements IndexingProcessor {
 	/**
 	 * Configure the bounded historical processor.
 	 *
