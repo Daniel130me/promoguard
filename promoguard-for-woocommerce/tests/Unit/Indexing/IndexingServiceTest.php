@@ -154,6 +154,15 @@ final class IndexingServiceTest extends TestCase {
 		$service->start( '123e4567-e89b-42d3-a456-426614174001', $this->time( '10:01:00' ) );
 	}
 
+	/** Superseded scheduler actions are harmless no-ops. */
+	public function test_stale_job_cannot_be_claimed(): void {
+		$service = new IndexingService( new InMemoryIndexingJobStore() );
+		$service->start( self::JOB_ID, $this->time( '10:00:00' ) );
+
+		self::assertNull(
+			$service->claim( '123e4567-e89b-42d3-a456-426614174001', $this->time( '10:01:00' ) )
+		);
+	}
 	/**
 	 * Build one deterministic GMT timestamp.
 	 *

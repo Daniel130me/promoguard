@@ -73,8 +73,8 @@ final class IndexingService {
 	 * @throws DomainException When the requested job is missing or stale.
 	 */
 	public function claim( string $job_id, DateTimeImmutable $now_gmt ): ?IndexingJob {
-		$job = $this->require_job( $job_id );
-		if ( IndexingStatus::QUEUED !== $job->status ) {
+		$job = $this->store->current();
+		if ( null === $job || $job->id !== $job_id || IndexingStatus::QUEUED !== $job->status ) {
 			return null;
 		}
 
