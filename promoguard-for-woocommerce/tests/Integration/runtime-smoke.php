@@ -149,6 +149,26 @@ $assignment = promoguard_smoke_expect_status(
 	201
 );
 
+// Early Phase 2 builds serialized empty settings as []; listing must remain backward compatible.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Creates one disposable legacy fixture for the REST compatibility check.
+$legacy_settings_updated = $wpdb->update(
+	$tables->campaign_promotions(),
+	array( 'settings' => '[]' ),
+	array( 'id' => $assignment['id'] ),
+	array( '%s' ),
+	array( '%d' )
+);
+promoguard_smoke_assert( false !== $legacy_settings_updated, 'Legacy assignment settings fixture could not be created.' );
+$listed_assignments = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		sprintf( '/promoguard/v1/campaigns/%d/promotions', $campaign_one['id'] ),
+		array( 'per_page' => 100 )
+	),
+	200
+);
+promoguard_smoke_assert( $assignment['id'] === $listed_assignments[0]['id'], 'Legacy empty settings must remain listable.' );
+
 promoguard_smoke_expect_status(
 	promoguard_smoke_request(
 		'POST',

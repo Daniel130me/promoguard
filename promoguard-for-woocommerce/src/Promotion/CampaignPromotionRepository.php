@@ -332,12 +332,15 @@ final class CampaignPromotionRepository implements CampaignPromotionStore {
 			throw new RuntimeException( 'Stored promotion assignment settings are invalid.', 0, $exception );
 		}
 
-		if ( ! is_object( $settings_object ) ) {
+		if ( array() === $settings_object ) {
+			// Early Phase 2 builds encoded empty assignment settings as [] instead of {}.
+			$settings = array();
+		} elseif ( is_object( $settings_object ) ) {
+			$settings = get_object_vars( $settings_object );
+		} else {
 			throw new RuntimeException( 'Stored promotion assignment settings must be an object.' );
 		}
-
-		$settings = get_object_vars( $settings_object );
-		$gmt      = new DateTimeZone( 'UTC' );
+		$gmt = new DateTimeZone( 'UTC' );
 
 		return new CampaignPromotion(
 			id: (int) $row['id'],
