@@ -15,7 +15,7 @@ final class IndexingBatch {
 	 * Create a validated batch result.
 	 *
 	 * @param int                                           $processed Number of orders inspected.
-	 * @param int                                           $imported  Number of new usage rows.
+	 * @param int                                           $imported  Orders that created at least one usage.
 	 * @param int                                           $skipped   Number of orders that required no import.
 	 * @param array<int,array{order_id:int,message:string}> $errors    Safe per-order failures.
 	 * @param bool                                          $has_more  Whether another page should run.

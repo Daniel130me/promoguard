@@ -27,7 +27,7 @@ final class IndexingJob {
 	 * @param int                                           $batch_size       Maximum orders per worker action.
 	 * @param int                                           $page             Next WooCommerce result page.
 	 * @param int                                           $processed        Orders inspected so far.
-	 * @param int                                           $imported         New usage rows created.
+	 * @param int                                           $imported         Orders that created usage.
 	 * @param int                                           $skipped          Orders requiring no import.
 	 * @param int                                           $failed           Orders that failed safely.
 	 * @param array<int,array{order_id:int,message:string}> $errors           Bounded safe error history.
