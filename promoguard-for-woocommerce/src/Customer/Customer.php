@@ -15,7 +15,7 @@ final class Customer {
 	/**
 	 * Create a validated customer snapshot.
 	 *
-	 * @param int|null          $id                      Persisted customer ID.
+	 * @param int               $id                      Persisted customer ID.
 	 * @param int|null          $wp_user_id              Authoritative WordPress user ID.
 	 * @param int|null          $merged_into_customer_id Merge target for a guest tombstone.
 	 * @param DateTimeImmutable $created_at_gmt          Creation timestamp.
@@ -23,7 +23,7 @@ final class Customer {
 	 * @throws InvalidArgumentException When customer state is inconsistent.
 	 */
 	public function __construct(
-		public readonly ?int $id,
+		public readonly int $id,
 		public readonly ?int $wp_user_id,
 		public readonly ?int $merged_into_customer_id,
 		public readonly DateTimeImmutable $created_at_gmt,
@@ -54,7 +54,7 @@ final class Customer {
 			}
 		}
 
-		if ( null !== $this->id && $this->id === $this->merged_into_customer_id ) {
+		if ( $this->id === $this->merged_into_customer_id ) {
 			throw new InvalidArgumentException( 'A customer cannot merge into itself.' );
 		}
 
