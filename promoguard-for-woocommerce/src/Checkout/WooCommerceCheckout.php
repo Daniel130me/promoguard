@@ -11,6 +11,8 @@ use DateTimeImmutable;
 use DateTimeZone;
 use PromoGuard\Application\EligibilityService;
 use PromoGuard\Campaign\CampaignRepository;
+use PromoGuard\Decision\DecisionRepository;
+use PromoGuard\Decision\DenialLogger;
 use PromoGuard\Promotion\CampaignPromotionRepository;
 use PromoGuard\Support\TableNames;
 use RuntimeException;
@@ -30,11 +32,17 @@ final class WooCommerceCheckout {
 	private array $latest = array();
 
 	/**
-	 * Configure checkout validation.
+	 * Configure checkout validation and denial diagnostics.
 	 *
-	 * @param CheckoutValidator $validator Request-cached validator.
+	 * @param CheckoutValidator $validator  Request-cached validator.
+	 * @param DenialLogger      $denials    Request-deduplicated denial logger.
+	 * @param string            $request_id Request correlation ID.
 	 */
-	public function __construct( private readonly CheckoutValidator $validator ) {}
+	public function __construct(
+		private readonly CheckoutValidator $validator,
+		private readonly DenialLogger $denials,
+		private readonly string $request_id
+	) {}
 
 	/** Build the production checkout adapter for the active site. */
 	public static function from_wordpress(): self {
@@ -47,7 +55,9 @@ final class WooCommerceCheckout {
 					new CampaignRepository( $tables )
 				),
 				EligibilityService::from_wordpress()
-			)
+			),
+			new DenialLogger( new DecisionRepository( $tables ) ),
+			wp_generate_uuid4()
 		);
 	}
 
@@ -71,12 +81,13 @@ final class WooCommerceCheckout {
 			return $valid;
 		}
 
+		$now_gmt    = $this->now_gmt();
 		$evaluation = $this->validator->evaluate(
 			$coupon->get_id(),
 			$this->cart_coupon_ids(),
 			$this->current_user_id(),
 			$this->current_billing_email(),
-			$this->now_gmt(),
+			$now_gmt,
 			true
 		);
 
@@ -85,6 +96,14 @@ final class WooCommerceCheckout {
 		}
 
 		$this->latest[ $coupon->get_id() ] = $evaluation;
+		$this->denials->record(
+			$evaluation,
+			$this->request_id,
+			DenialLogger::CONTEXT_COUPON_VALIDATION,
+			$now_gmt,
+			coupon_code: $coupon->get_code()
+		);
+
 		return $evaluation->decision->allowed;
 	}
 
@@ -123,6 +142,8 @@ final class WooCommerceCheckout {
 			$this->cart_coupon_ids(),
 			$this->current_user_id(),
 			$email,
+			DenialLogger::CONTEXT_CLASSIC_CHECKOUT,
+			null,
 			static function ( CheckoutEvaluation $evaluation ) use ( $errors ): void {
 				$errors->add(
 					'promoguard_' . $evaluation->decision->reason,
@@ -147,6 +168,8 @@ final class WooCommerceCheckout {
 			$this->coupon_ids_from_codes( $order->get_coupon_codes() ),
 			$order->get_customer_id() > 0 ? $order->get_customer_id() : null,
 			$order->get_billing_email(),
+			DenialLogger::CONTEXT_STORE_API,
+			$order->get_id(),
 			static function ( CheckoutEvaluation $evaluation ): void {
 				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Fixed customer-safe policy message is handled by the Store API exception boundary.
 				throw new RuntimeException( $evaluation->decision->customer_message );
@@ -160,21 +183,33 @@ final class WooCommerceCheckout {
 	 * @param int[]                             $coupon_ids Coupon IDs.
 	 * @param int|null                          $user_id    WordPress user ID.
 	 * @param string|null                       $email      Billing email.
-	 * @param callable(CheckoutEvaluation):void $on_denied  Transport-specific denial handler.
+	 * @param string                            $context    Validation context.
+	 * @param int|null                          $order_id   Checkout order ID.
+	 * @param callable(CheckoutEvaluation):void $on_denied Transport-specific denial handler.
 	 */
-	private function validate_final( array $coupon_ids, ?int $user_id, ?string $email, callable $on_denied ): void {
+	private function validate_final(
+		array $coupon_ids,
+		?int $user_id,
+		?string $email,
+		string $context,
+		?int $order_id,
+		callable $on_denied
+	): void {
+		$now_gmt = $this->now_gmt();
+
 		foreach ( array_unique( $coupon_ids ) as $coupon_id ) {
 			$evaluation = $this->validator->evaluate(
 				$coupon_id,
 				$coupon_ids,
 				$user_id,
 				$email,
-				$this->now_gmt(),
+				$now_gmt,
 				false
 			);
 
 			if ( null !== $evaluation && ! $evaluation->decision->allowed ) {
 				$this->latest[ $coupon_id ] = $evaluation;
+				$this->denials->record( $evaluation, $this->request_id, $context, $now_gmt, $order_id );
 				$on_denied( $evaluation );
 			}
 		}
