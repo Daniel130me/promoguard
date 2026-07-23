@@ -11,8 +11,8 @@ use InvalidArgumentException;
 
 /** Identifies the authoritative usage row returned by an atomic reservation. */
 final class ReservationResult {
-	public const PENDING  = 'pending';
-	public const CONSUMED = 'consumed';
+	public const PENDING  = UsageStatus::PENDING;
+	public const CONSUMED = UsageStatus::CONSUMED;
 
 	/**
 	 * Create a reservation result.
