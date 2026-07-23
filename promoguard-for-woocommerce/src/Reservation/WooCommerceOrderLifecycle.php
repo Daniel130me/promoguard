@@ -32,11 +32,13 @@ final class WooCommerceOrderLifecycle {
 	 *
 	 * @param CheckoutTargetResolver      $targets            Indexed coupon target resolver.
 	 * @param OrderReservationCoordinator $order_reservations Final order validation and reservation.
+	 * @param OrderLifecycleContextStore  $contexts           Pending usage snapshot lookup.
 	 * @param UsageLifecycleService       $lifecycle          Usage lifecycle policy service.
 	 */
 	public function __construct(
 		private readonly CheckoutTargetResolver $targets,
 		private readonly OrderReservationCoordinator $order_reservations,
+		private readonly OrderLifecycleContextStore $contexts,
 		private readonly UsageLifecycleService $lifecycle
 	) {}
 
@@ -50,6 +52,7 @@ final class WooCommerceOrderLifecycle {
 		$validator  = new CheckoutValidator( $targets, EligibilityService::from_wordpress() );
 		$denials    = new DenialLogger( new DecisionRepository( $tables ) );
 		$request_id = wp_generate_uuid4();
+		$usages     = new OrderUsageRepository( $tables );
 
 		return new self(
 			$targets,
@@ -58,10 +61,11 @@ final class WooCommerceOrderLifecycle {
 				$denials,
 				new ReservationService( new ReservationRepository( $tables ) ),
 				new ReservationRequestFactory(),
-				new OrderUsageRepository( $tables ),
+				$usages,
 				static fn(): string => wp_generate_uuid4(),
 				$request_id
 			),
+			$usages,
 			new UsageLifecycleService( new UsageLifecycleRepository( $tables ) )
 		);
 	}
@@ -93,10 +97,10 @@ final class WooCommerceOrderLifecycle {
 		}
 
 		$now_gmt = new DateTimeImmutable( current_time( 'mysql', true ), new DateTimeZone( 'UTC' ) );
-		$items   = $this->campaign_coupon_items( $order );
+		$targets = $this->campaign_coupon_targets( $order );
 		$denied  = $this->recorded_denials( $order );
 
-		if ( $this->requires_final_validation( $items, $new_status ) ) {
+		if ( $this->requires_final_validation( $targets, $new_status ) ) {
 			$new_denials = $this->order_reservations->reserve(
 				$this->coupon_ids_from_codes( $order->get_coupon_codes() ),
 				$order->get_customer_id() > 0 ? $order->get_customer_id() : null,
@@ -114,21 +118,26 @@ final class WooCommerceOrderLifecycle {
 			}
 		}
 
-		foreach ( $items as $campaign_id => $item ) {
-			if ( isset( $denied[ $campaign_id ] ) ) {
+		$discounts = $this->discounts_by_coupon_code( $order );
+		foreach ( $this->contexts->pending_for_order( $order_id ) as $context ) {
+			if ( isset( $denied[ $context->campaign_id ] ) ) {
 				continue;
 			}
 
-			$target = $item['target'];
+			$coupon_key = null === $context->coupon_code
+				? null
+				: wc_format_coupon_code( $context->coupon_code );
+			$discount   = null === $coupon_key ? '0' : ( $discounts[ $coupon_key ] ?? '0' );
+
 			$this->lifecycle->transition(
 				new UsageTransition(
-					campaign_id: $campaign_id,
+					campaign_id: $context->campaign_id,
 					order_id: $order_id,
 					order_status: $new_status,
-					discount_amount: $item['discount_amount'],
+					discount_amount: $discount,
 					occurred_at_gmt: $now_gmt
 				),
-				$target->campaign->configuration->usage_rules()
+				$context->usage_rules
 			);
 		}
 	}
@@ -136,12 +145,12 @@ final class WooCommerceOrderLifecycle {
 	/**
 	 * Whether any protected campaign counts the incoming status.
 	 *
-	 * @param array<int,array{target:CheckoutTarget,coupon_id:int,discount_amount:string}> $items  Protected coupon items.
-	 * @param string                                                                       $status Incoming order status.
+	 * @param array<int,CheckoutTarget> $targets Protected campaign targets.
+	 * @param string                    $status  Incoming order status.
 	 */
-	private function requires_final_validation( array $items, string $status ): bool {
-		foreach ( $items as $item ) {
-			$rules = $item['target']->campaign->configuration->usage_rules();
+	private function requires_final_validation( array $targets, string $status ): bool {
+		foreach ( $targets as $target ) {
+			$rules = $target->campaign->configuration->usage_rules();
 			if ( in_array( $status, $rules['counted_statuses'], true ) ) {
 				return true;
 			}
@@ -205,14 +214,14 @@ final class WooCommerceOrderLifecycle {
 	}
 
 	/**
-	 * Resolve at most one coupon item per protected campaign.
+	 * Resolve at most one live coupon target per protected campaign.
 	 *
 	 * Campaign configuration already restricts orders to one coupon per campaign.
 	 *
 	 * @param WC_Order $order Updated WooCommerce order.
-	 * @return array<int,array{target:CheckoutTarget,coupon_id:int,discount_amount:string}>
+	 * @return array<int,CheckoutTarget>
 	 */
-	private function campaign_coupon_items( WC_Order $order ): array {
+	private function campaign_coupon_targets( WC_Order $order ): array {
 		$campaigns = array();
 
 		foreach ( $order->get_items( 'coupon' ) as $item ) {
@@ -232,16 +241,28 @@ final class WooCommerceOrderLifecycle {
 				continue;
 			}
 
-			$campaigns[ $campaign_id ] = array(
-				'target'          => $target,
-				'coupon_id'       => $coupon_id,
-				'discount_amount' => wc_format_decimal( $item->get_discount(), 8 ),
-			);
+			$campaigns[ $campaign_id ] = $target;
 		}
 
 		return $campaigns;
 	}
 
+	/**
+	 * Snapshot coupon-item discounts by WooCommerce-normalized code.
+	 *
+	 * @param WC_Order $order WooCommerce order.
+	 * @return array<string,string>
+	 */
+	private function discounts_by_coupon_code( WC_Order $order ): array {
+		$discounts = array();
+		foreach ( $order->get_items( 'coupon' ) as $item ) {
+			if ( $item instanceof WC_Order_Item_Coupon ) {
+				$discounts[ wc_format_coupon_code( $item->get_code() ) ] = wc_format_decimal( $item->get_discount(), 8 );
+			}
+		}
+
+		return $discounts;
+	}
 	/**
 	 * Resolve bounded coupon codes through WooCommerce's public lookup.
 	 *
