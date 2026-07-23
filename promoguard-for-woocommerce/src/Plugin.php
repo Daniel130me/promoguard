@@ -11,6 +11,7 @@ use Automattic\WooCommerce\Utilities\FeaturesUtil;
 use PromoGuard\Activation\Installer;
 use PromoGuard\Admin\CampaignPage;
 use PromoGuard\Api\CampaignController;
+use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Support\Capabilities;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\Requirements;
@@ -54,6 +55,7 @@ final class Plugin {
 		 */
 		do_action( 'promoguard_loaded', PROMOGUARD_VERSION );
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
+		WooCommerceCheckout::from_wordpress()->register();
 
 		if ( is_admin() ) {
 			CampaignPage::register();
