@@ -7,7 +7,9 @@
 
 namespace PromoGuard\Indexing;
 
+use PromoGuard\Campaign\CampaignConfiguration;
 use PromoGuard\Customer\IdentityResolver;
+use PromoGuard\Reservation\UsageStatus;
 use Throwable;
 
 /** Reconstructs consumed usages from one bounded source page. */
@@ -62,6 +64,9 @@ final class HistoricalIndexingProcessor {
 							$target['coupon']->order_item_id,
 							$target['campaign']->coupon_id,
 							$target['coupon']->code,
+							$order->is_full_refund && CampaignConfiguration::REFUND_RESTORE === $target['campaign']->refund_behavior
+								? UsageStatus::RESTORED
+								: UsageStatus::CONSUMED,
 							$order->status,
 							$target['coupon']->discount,
 							$order->currency,

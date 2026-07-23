@@ -20,6 +20,7 @@ use PromoGuard\Indexing\HistoricalOrder;
 use PromoGuard\Indexing\HistoricalOrderPage;
 use PromoGuard\Indexing\IndexingJob;
 use PromoGuard\Indexing\IndexingStatus;
+use PromoGuard\Reservation\UsageStatus;
 use PromoGuard\Tests\Support\InMemoryCustomerIdentityStore;
 use PromoGuard\Tests\Support\InMemoryHistoricalImportStore;
 use PromoGuard\Tests\Support\InMemoryHistoricalOrderSource;
@@ -94,15 +95,36 @@ final class HistoricalIndexingProcessorTest extends TestCase {
 		self::assertSame( 'Customer identity could not be resolved safely.', $result->errors[0]['message'] );
 	}
 
+	/** Fully refunded restore-policy orders import a non-counting restored usage. */
+	public function test_full_refund_restore_policy_imports_restored_usage(): void {
+		$imports                       = new InMemoryHistoricalImportStore();
+		$imports->campaigns['welcome'] = new HistoricalCampaign( 4, 8, 12, array( 'completed' ), 'restore' );
+		$processor                     = new HistoricalIndexingProcessor(
+			new InMemoryHistoricalOrderSource(
+				new HistoricalOrderPage(
+					array( $this->order( 60, 'welcome', 'completed', 'buyer@example.com', true ) ),
+					array(),
+					false
+				)
+			),
+			$imports,
+			$this->identities()
+		);
+
+		$processor->process( $this->job() );
+
+		self::assertSame( UsageStatus::RESTORED, $imports->usages['60:4']->status );
+	}
 	/**
 	 * Build one order fixture.
 	 *
 	 * @param int         $id     Order ID.
 	 * @param string      $code   Coupon code.
 	 * @param string      $status Order status.
-	 * @param string|null $email  Billing email.
+	 * @param string|null $email    Billing email.
+	 * @param bool        $refunded Whether the order is fully refunded.
 	 */
-	private function order( int $id, string $code, string $status, ?string $email ): HistoricalOrder {
+	private function order( int $id, string $code, string $status, ?string $email, bool $refunded = false ): HistoricalOrder {
 		return new HistoricalOrder(
 			$id,
 			null,
@@ -110,7 +132,8 @@ final class HistoricalIndexingProcessorTest extends TestCase {
 			$status,
 			'USD',
 			$this->time(),
-			array( new HistoricalCoupon( $id + 100, strtoupper( $code ), $code, '10.00000000' ) )
+			array( new HistoricalCoupon( $id + 100, strtoupper( $code ), $code, '10.00000000' ) ),
+			$refunded
 		);
 	}
 

@@ -10,6 +10,7 @@ namespace PromoGuard\Indexing;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use PromoGuard\Campaign\CampaignConfiguration;
+use PromoGuard\Reservation\UsageStatus;
 
 /** Immutable consumed-usage facts ready for idempotent persistence. */
 final class HistoricalUsage {
@@ -23,6 +24,7 @@ final class HistoricalUsage {
 	 * @param int               $order_item_id   WooCommerce coupon item ID.
 	 * @param int|null          $coupon_id       Native coupon ID when available.
 	 * @param string            $coupon_code     Coupon code snapshot.
+	 * @param string            $status          Consumed or restored status.
 	 * @param string            $order_status    Consuming order status.
 	 * @param string            $discount_amount Decimal discount snapshot.
 	 * @param string            $currency        Three-letter order currency.
@@ -38,6 +40,7 @@ final class HistoricalUsage {
 		public readonly int $order_item_id,
 		public readonly ?int $coupon_id,
 		public readonly string $coupon_code,
+		public readonly string $status,
 		public readonly string $order_status,
 		public readonly string $discount_amount,
 		public readonly string $currency,
@@ -53,6 +56,7 @@ final class HistoricalUsage {
 			|| ( null !== $coupon_id && $coupon_id < 1 )
 			|| '' === trim( $coupon_code )
 			|| strlen( $coupon_code ) > 255
+			|| ! in_array( $status, array( UsageStatus::CONSUMED, UsageStatus::RESTORED ), true )
 			|| '' === trim( $order_status )
 			|| ! is_numeric( $discount_amount )
 			|| (float) $discount_amount < 0

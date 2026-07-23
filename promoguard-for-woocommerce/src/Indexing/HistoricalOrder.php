@@ -22,6 +22,7 @@ final class HistoricalOrder {
 	 * @param string             $currency       Three-letter order currency.
 	 * @param DateTimeImmutable  $occurred_at_gmt Order creation time.
 	 * @param HistoricalCoupon[] $coupons        Coupon item snapshots.
+	 * @param bool               $is_full_refund Whether cumulative refunds cover the order.
 	 * @throws InvalidArgumentException When order facts are malformed.
 	 */
 	public function __construct(
@@ -31,7 +32,8 @@ final class HistoricalOrder {
 		public readonly string $status,
 		public readonly string $currency,
 		public readonly DateTimeImmutable $occurred_at_gmt,
-		public readonly array $coupons
+		public readonly array $coupons,
+		public readonly bool $is_full_refund
 	) {
 		if (
 			$id < 1
