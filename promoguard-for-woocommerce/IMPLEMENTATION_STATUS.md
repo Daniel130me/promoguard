@@ -52,6 +52,7 @@ next.
 - [x] Authoritative customer handoff without a repeated identity lookup
 - [x] Validated reservation request/result contracts and bounded contention retry
 - [x] Atomic state creation, row locking, expiry release, limit check, and pending usage persistence
+- [x] Classic and Store API processed-order reservation hooks before payment
 
 ### Campaign administration
 
@@ -72,7 +73,7 @@ next.
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 117 tests, 306 assertions
+  - PHPUnit: 119 tests, 317 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: da23eb881114
@@ -146,6 +147,6 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-WooCommerce reservation-hook integration, consumption, release, expiration
-batches, admin/REST validation, refunds, historical indexing, analytics, privacy
-tools, and release hardening belong to the remaining phases.
+Consumption, release, expiration batches, admin/REST validation, refunds,
+historical indexing, analytics, privacy tools, and release hardening belong to
+the remaining phases.

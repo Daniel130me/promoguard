@@ -83,7 +83,9 @@ state row idempotently, locks it, releases expired pending usages, checks the
 authoritative counters and existing order/campaign usage, then inserts or
 reactivates one pending usage and increments the reserved counter in the same
 transaction. Only deadlocks and lock-wait timeouts receive three bounded retry
-attempts.
+attempts. Classic and Store API processed-order hooks share this reservation
+path immediately before payment; normal requests reuse the final cached
+evaluation, while a missing or provisional result is evaluated finally.
 
 ## Performance baseline
 
