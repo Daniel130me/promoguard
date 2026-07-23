@@ -48,6 +48,75 @@ final class CheckoutValidator {
 		DateTimeImmutable $now_gmt,
 		bool $allow_provisional_identity
 	): ?CheckoutEvaluation {
+		return $this->evaluate_with_cache(
+			$coupon_id,
+			$applied_coupon_ids,
+			$wp_user_id,
+			$billing_email,
+			$now_gmt,
+			$allow_provisional_identity,
+			true
+		);
+	}
+
+	/**
+	 * Resolve one protected coupon target without evaluating customer policy.
+	 *
+	 * @param int $coupon_id Native coupon ID.
+	 */
+	public function resolve_target( int $coupon_id ): ?CheckoutTarget {
+		return $this->targets->resolve( $coupon_id );
+	}
+
+	/**
+	 * Re-evaluate current state after an atomic reservation race.
+	 *
+	 * @param int               $coupon_id                  Coupon being evaluated.
+	 * @param int[]             $applied_coupon_ids         Coupon IDs on the order.
+	 * @param int|null          $wp_user_id                 WordPress user ID.
+	 * @param string|null       $billing_email              Raw billing email.
+	 * @param DateTimeImmutable $now_gmt                    Current GMT time.
+	 * @param bool              $allow_provisional_identity Whether identity may be deferred.
+	 */
+	public function evaluate_fresh(
+		int $coupon_id,
+		array $applied_coupon_ids,
+		?int $wp_user_id,
+		?string $billing_email,
+		DateTimeImmutable $now_gmt,
+		bool $allow_provisional_identity
+	): ?CheckoutEvaluation {
+		return $this->evaluate_with_cache(
+			$coupon_id,
+			$applied_coupon_ids,
+			$wp_user_id,
+			$billing_email,
+			$now_gmt,
+			$allow_provisional_identity,
+			false
+		);
+	}
+
+	/**
+	 * Evaluate one coupon with optional request-cache reuse.
+	 *
+	 * @param int               $coupon_id                  Coupon being evaluated.
+	 * @param int[]             $applied_coupon_ids         Coupon IDs on the order.
+	 * @param int|null          $wp_user_id                 WordPress user ID.
+	 * @param string|null       $billing_email              Raw billing email.
+	 * @param DateTimeImmutable $now_gmt                    Current GMT time.
+	 * @param bool              $allow_provisional_identity Whether identity may be deferred.
+	 * @param bool              $use_cache                  Whether equivalent decisions may be reused.
+	 */
+	private function evaluate_with_cache(
+		int $coupon_id,
+		array $applied_coupon_ids,
+		?int $wp_user_id,
+		?string $billing_email,
+		DateTimeImmutable $now_gmt,
+		bool $allow_provisional_identity,
+		bool $use_cache
+	): ?CheckoutEvaluation {
 		$target = $this->targets->resolve( $coupon_id );
 		if ( null === $target ) {
 			return null;
@@ -67,7 +136,7 @@ final class CheckoutValidator {
 			$allow_provisional_identity
 		);
 
-		if ( isset( $this->decisions[ $cache_key ] ) ) {
+		if ( $use_cache && isset( $this->decisions[ $cache_key ] ) ) {
 			return $this->decisions[ $cache_key ];
 		}
 

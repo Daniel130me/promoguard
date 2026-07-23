@@ -74,6 +74,35 @@ final class CheckoutValidatorTest extends TestCase {
 		self::assertSame( 12, $first->customer_id );
 	}
 
+	/** Fresh evaluation bypasses a stale request-cached approval after a race. */
+	public function test_fresh_evaluation_bypasses_request_cache(): void {
+		$campaign    = self::campaign();
+		$assignments = $this->createMock( CampaignPromotionStore::class );
+		$campaigns   = $this->createMock( CampaignStore::class );
+		$eligibility = $this->createMock( EligibilityEvaluator::class );
+		$assignments->method( 'find_by_source' )->willReturn( self::assignment( 77 ) );
+		$campaigns->method( 'find' )->willReturn( $campaign );
+		$eligibility
+			->expects( self::exactly( 2 ) )
+			->method( 'evaluate' )
+			->willReturnOnConsecutiveCalls(
+				self::eligibility_result(),
+				self::denied_eligibility_result()
+			);
+		$validator = new CheckoutValidator(
+			new CheckoutTargetResolver( $assignments, $campaigns ),
+			$eligibility
+		);
+
+		$cached = $validator->evaluate( 77, array( 77 ), 42, 'customer@example.com', self::time(), false );
+		$fresh  = $validator->evaluate_fresh( 77, array( 77 ), 42, 'customer@example.com', self::time(), false );
+
+		self::assertNotNull( $cached );
+		self::assertNotNull( $fresh );
+		self::assertTrue( $cached->decision->allowed );
+		self::assertFalse( $fresh->decision->allowed );
+		self::assertSame( EligibilityDecision::CUSTOMER_LIMIT_REACHED, $fresh->decision->reason );
+	}
 	/**
 	 * Build a persisted coupon assignment.
 	 *
@@ -136,6 +165,24 @@ final class CheckoutValidatorTest extends TestCase {
 		);
 	}
 
+	/** Build a denied result with the same authoritative customer. */
+	private static function denied_eligibility_result(): EligibilityResult {
+		$time = self::time();
+
+		return new EligibilityResult(
+			new IdentityResolution(
+				new Customer( 12, 42, null, $time, $time ),
+				IdentityResolution::OUTCOME_MATCHED
+			),
+			new EligibilityDecision(
+				false,
+				false,
+				EligibilityDecision::CUSTOMER_LIMIT_REACHED,
+				'Maximum reached.',
+				'Customer campaign limit reached.'
+			)
+		);
+	}
 	/** Build a stable GMT timestamp. */
 	private static function time(): DateTimeImmutable {
 		return new DateTimeImmutable( '2026-07-23 12:00:00', new DateTimeZone( 'UTC' ) );

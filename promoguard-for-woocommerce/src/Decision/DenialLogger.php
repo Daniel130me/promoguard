@@ -16,6 +16,7 @@ final class DenialLogger {
 	public const CONTEXT_CLASSIC_CHECKOUT  = 'classic_checkout';
 	public const CONTEXT_STORE_API         = 'store_api_checkout';
 	public const CONTEXT_RESERVATION       = 'reservation';
+	public const CONTEXT_ORDER_VALIDATION  = 'order_validation';
 
 	/**
 	 * Successfully persisted request-local denial keys.
