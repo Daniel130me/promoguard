@@ -9,7 +9,6 @@ namespace PromoGuard\Application;
 
 use DateTimeImmutable;
 use PromoGuard\Campaign\Campaign;
-use PromoGuard\Eligibility\EligibilityDecision;
 
 /** Defines the application boundary used by checkout transports. */
 interface EligibilityEvaluator {
@@ -30,5 +29,5 @@ interface EligibilityEvaluator {
 		int $applied_campaign_coupon_count,
 		DateTimeImmutable $now_gmt,
 		bool $allow_provisional_identity = false
-	): EligibilityDecision;
+	): EligibilityResult;
 }

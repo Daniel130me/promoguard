@@ -14,11 +14,13 @@ final class CheckoutEvaluation {
 	/**
 	 * Create a checkout evaluation.
 	 *
-	 * @param CheckoutTarget      $target   Resolved campaign target.
-	 * @param EligibilityDecision $decision Shared policy decision.
+	 * @param CheckoutTarget      $target      Resolved campaign target.
+	 * @param EligibilityDecision $decision    Shared policy decision.
+	 * @param int|null            $customer_id Resolved internal customer ID.
 	 */
 	public function __construct(
 		public readonly CheckoutTarget $target,
-		public readonly EligibilityDecision $decision
+		public readonly EligibilityDecision $decision,
+		public readonly ?int $customer_id = null
 	) {}
 }

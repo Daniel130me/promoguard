@@ -46,6 +46,7 @@ final class DenialLoggerTest extends TestCase {
 		self::assertSame( 5, $store->records[0]->campaign_id );
 		self::assertSame( 9, $store->records[0]->promotion_id );
 		self::assertSame( 77, $store->records[0]->coupon_id );
+		self::assertSame( 15, $store->records[0]->customer_id );
 		self::assertSame( 'WELCOME10', $store->records[0]->coupon_code );
 		self::assertSame( EligibilityDecision::CUSTOMER_LIMIT_REACHED, $store->records[0]->reason );
 		self::assertSame( array(), $store->records[0]->metadata );
@@ -112,7 +113,7 @@ final class DenialLoggerTest extends TestCase {
 				'Committed usage reached the limit.'
 			);
 
-		return new CheckoutEvaluation( new CheckoutTarget( $assignment, $campaign ), $decision );
+		return new CheckoutEvaluation( new CheckoutTarget( $assignment, $campaign ), $decision, 15 );
 	}
 
 	/** Build a stable GMT timestamp. */

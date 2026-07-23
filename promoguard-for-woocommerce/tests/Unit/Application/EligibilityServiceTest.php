@@ -37,7 +37,7 @@ final class EligibilityServiceTest extends TestCase {
 			new EligibilityEngine( $states )
 		);
 
-		$decision = $service->evaluate(
+		$result = $service->evaluate(
 			self::campaign(),
 			42,
 			' Customer@example.com ',
@@ -45,7 +45,8 @@ final class EligibilityServiceTest extends TestCase {
 			self::time( '2026-07-23 12:00:00' )
 		);
 
-		self::assertSame( EligibilityDecision::ALLOWED, $decision->reason );
+		self::assertSame( EligibilityDecision::ALLOWED, $result->decision->reason );
+		self::assertSame( 1, $result->customer_id() );
 		self::assertCount( 1, $identities->customers );
 		self::assertSame( 42, $identities->customers[1]->wp_user_id );
 		self::assertSame( 1, $states->calls );

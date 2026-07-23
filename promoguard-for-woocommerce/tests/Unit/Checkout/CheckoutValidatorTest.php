@@ -11,12 +11,15 @@ use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 use PromoGuard\Application\EligibilityEvaluator;
+use PromoGuard\Application\EligibilityResult;
 use PromoGuard\Campaign\Campaign;
 use PromoGuard\Campaign\CampaignConfiguration;
 use PromoGuard\Campaign\CampaignStatus;
 use PromoGuard\Campaign\CampaignStore;
 use PromoGuard\Checkout\CheckoutTargetResolver;
 use PromoGuard\Checkout\CheckoutValidator;
+use PromoGuard\Customer\Customer;
+use PromoGuard\Customer\IdentityResolution;
 use PromoGuard\Eligibility\EligibilityDecision;
 use PromoGuard\Promotion\CampaignPromotion;
 use PromoGuard\Promotion\CampaignPromotionStore;
@@ -56,7 +59,7 @@ final class CheckoutValidatorTest extends TestCase {
 			->expects( self::once() )
 			->method( 'evaluate' )
 			->with( $campaign, 42, 'customer@example.com', 1, self::time(), false )
-			->willReturn( self::allowed() );
+			->willReturn( self::eligibility_result() );
 		$validator = new CheckoutValidator(
 			new CheckoutTargetResolver( $assignments, $campaigns ),
 			$eligibility
@@ -68,6 +71,7 @@ final class CheckoutValidatorTest extends TestCase {
 		self::assertNotNull( $first );
 		self::assertSame( $first, $second );
 		self::assertSame( EligibilityDecision::ALLOWED, $first->decision->reason );
+		self::assertSame( 12, $first->customer_id );
 	}
 
 	/**
@@ -119,9 +123,17 @@ final class CheckoutValidatorTest extends TestCase {
 		);
 	}
 
-	/** Build an allowed decision. */
-	private static function allowed(): EligibilityDecision {
-		return new EligibilityDecision( true, false, EligibilityDecision::ALLOWED, '', 'Allowed.' );
+	/** Build an allowed result with an authoritative internal customer. */
+	private static function eligibility_result(): EligibilityResult {
+		$time = self::time();
+
+		return new EligibilityResult(
+			new IdentityResolution(
+				new Customer( 12, 42, null, $time, $time ),
+				IdentityResolution::OUTCOME_MATCHED
+			),
+			new EligibilityDecision( true, false, EligibilityDecision::ALLOWED, '', 'Allowed.' )
+		);
 	}
 
 	/** Build a stable GMT timestamp. */

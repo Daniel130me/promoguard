@@ -39,7 +39,6 @@ final class DenialLogger {
 	 * @param DateTimeImmutable  $now_gmt     Current GMT time.
 	 * @param int|null           $order_id    Checkout order ID.
 	 * @param string|null        $coupon_code Coupon code snapshot.
-	 * @param int|null           $customer_id Resolved internal customer ID.
 	 */
 	public function record(
 		CheckoutEvaluation $evaluation,
@@ -47,8 +46,7 @@ final class DenialLogger {
 		string $context,
 		DateTimeImmutable $now_gmt,
 		?int $order_id = null,
-		?string $coupon_code = null,
-		?int $customer_id = null
+		?string $coupon_code = null
 	): void {
 		if ( $evaluation->decision->allowed ) {
 			return;
@@ -77,7 +75,7 @@ final class DenialLogger {
 				request_id: $request_id,
 				campaign_id: $assignment->campaign_id,
 				promotion_id: $assignment->id,
-				customer_id: $customer_id,
+				customer_id: $evaluation->customer_id,
 				order_id: $order_id,
 				coupon_id: $coupon_id,
 				coupon_code: $coupon_code ?? $assignment->external_code,

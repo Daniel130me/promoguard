@@ -71,7 +71,7 @@ final class CheckoutValidator {
 			return $this->decisions[ $cache_key ];
 		}
 
-		$decision = $this->eligibility->evaluate(
+		$eligibility = $this->eligibility->evaluate(
 			$target->campaign,
 			$wp_user_id,
 			$billing_email,
@@ -79,7 +79,7 @@ final class CheckoutValidator {
 			$now_gmt,
 			$allow_provisional_identity
 		);
-		$result   = new CheckoutEvaluation( $target, $decision );
+		$result      = new CheckoutEvaluation( $target, $eligibility->decision, $eligibility->customer_id() );
 
 		$this->decisions[ $cache_key ] = $result;
 		return $result;

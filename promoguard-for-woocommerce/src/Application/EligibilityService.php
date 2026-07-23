@@ -15,7 +15,6 @@ use PromoGuard\Customer\IdentifierHasher;
 use PromoGuard\Customer\IdentityResolver;
 use PromoGuard\Eligibility\CustomerCampaignStateRepository;
 use PromoGuard\Eligibility\EligibilityContext;
-use PromoGuard\Eligibility\EligibilityDecision;
 use PromoGuard\Eligibility\EligibilityEngine;
 use PromoGuard\Support\Options;
 use RuntimeException;
@@ -71,17 +70,20 @@ final class EligibilityService implements EligibilityEvaluator {
 		int $applied_campaign_coupon_count,
 		DateTimeImmutable $now_gmt,
 		bool $allow_provisional_identity = false
-	): EligibilityDecision {
+	): EligibilityResult {
 		$identity = $this->identities->resolve( $wp_user_id, $billing_email );
 
-		return $this->engine->evaluate(
-			new EligibilityContext(
-				campaign: $campaign,
-				identity: $identity,
-				is_authenticated: null !== $wp_user_id && $wp_user_id > 0,
-				applied_campaign_coupon_count: $applied_campaign_coupon_count,
-				now_gmt: $now_gmt,
-				allow_provisional_identity: $allow_provisional_identity
+		return new EligibilityResult(
+			$identity,
+			$this->engine->evaluate(
+				new EligibilityContext(
+					campaign: $campaign,
+					identity: $identity,
+					is_authenticated: null !== $wp_user_id && $wp_user_id > 0,
+					applied_campaign_coupon_count: $applied_campaign_coupon_count,
+					now_gmt: $now_gmt,
+					allow_provisional_identity: $allow_provisional_identity
+				)
 			)
 		);
 	}
