@@ -77,6 +77,14 @@ campaign, promotion, order, and reason to the plugin-owned decision table.
 Allowed and provisional outcomes do not create diagnostic writes, and raw
 customer identity is never included in denial metadata.
 
+Phase 6 carries the resolved internal customer ID into final checkout without a
+second identity query. Reservation persistence creates the campaign/customer
+state row idempotently, locks it, releases expired pending usages, checks the
+authoritative counters and existing order/campaign usage, then inserts or
+reactivates one pending usage and increments the reserved counter in the same
+transaction. Only deadlocks and lock-wait timeouts receive three bounded retry
+attempts.
+
 ## Performance baseline
 
 Installation uses one bounded metadata query for seven known tables. Identity
@@ -85,4 +93,6 @@ Eligibility short-circuits status, login, and identity failures before making at
 most one lookup through the unique campaign/customer state index. It never scans
 orders during checkout; historical reconstruction belongs only in bounded
 background jobs. Denial logging performs one prepared insert only when a unique
-denial is encountered during the request.
+denial is encountered during the request. Reservation queries use the unique
+campaign/customer and order/campaign indexes; expiration cleanup is restricted
+to the locked campaign/customer state.

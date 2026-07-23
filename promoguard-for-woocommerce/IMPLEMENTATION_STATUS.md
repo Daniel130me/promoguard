@@ -2,10 +2,12 @@
 
 ## Current phase
 
-Phase 3: campaign administration — complete on the pinned default target.
+Phase 6: reservations and lifecycle — in progress on the pinned default target.
 
-Campaign creation, lifecycle management, archival, and native coupon assignment
-workflows are available through the capability-protected WordPress admin page.
+Identity, deterministic eligibility, Classic/Store API checkout enforcement,
+deduplicated denial logging, and the atomic reservation persistence foundation
+are implemented. WooCommerce order-hook integration and lifecycle transitions are
+next.
 
 ## Completed
 
@@ -41,6 +43,16 @@ workflows are available through the capability-protected WordPress admin page.
 - [x] Closed request schemas for supported campaign configuration
 - [x] Structured API resources and unsafe-deletion conflict responses
 
+### Identity, checkout, and reservation foundations
+
+- [x] User-first customer identity with privacy-safe hashed guest email
+- [x] Deterministic campaign eligibility and request-local decision caching
+- [x] Classic and Store API final validation for assigned native coupons
+- [x] Request-deduplicated, customer-attributed denial persistence
+- [x] Authoritative customer handoff without a repeated identity lookup
+- [x] Validated reservation request/result contracts and bounded contention retry
+- [x] Atomic state creation, row locking, expiry release, limit check, and pending usage persistence
+
 ### Campaign administration
 
 - [x] Capability-protected PromoGuard administration menu and page
@@ -60,7 +72,7 @@ workflows are available through the capability-protected WordPress admin page.
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 68 tests, 181 assertions
+  - PHPUnit: 117 tests, 306 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: da23eb881114
@@ -105,7 +117,9 @@ workflows are available through the capability-protected WordPress admin page.
 - Runtime capability synchronization checks in-memory role state and writes only
   missing grants, covering late WooCommerce role creation without steady-state
   option updates.
-- No storefront or checkout queries are introduced through this Phase 3 slice.
+- Checkout resolves identity once per decision and carries only the internal customer ID into denial and reservation boundaries.
+- Reservation persistence locks the unique campaign/customer state before reconciling expiry, checking limits, and changing counters; it performs no remote work.
+- Reservation retries are capped at three and apply only to deadlocks and lock-wait timeouts; other failures stop immediately.
 - The administration page enqueues assets only on its exact hook suffix. List
   requests are capped at 20 records per page, rows are built in one document
   fragment, and API content is inserted with textContent.
@@ -132,6 +146,6 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Identity, eligibility, checkout enforcement, reservations, order lifecycle
-handling, refunds, historical indexing, analytics, privacy tools, and release
-hardening belong to later phases.
+WooCommerce reservation-hook integration, consumption, release, expiration
+batches, admin/REST validation, refunds, historical indexing, analytics, privacy
+tools, and release hardening belong to the remaining phases.
