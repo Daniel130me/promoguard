@@ -12,6 +12,7 @@ use PromoGuard\Activation\Installer;
 use PromoGuard\Admin\CampaignPage;
 use PromoGuard\Api\CampaignController;
 use PromoGuard\Checkout\WooCommerceCheckout;
+use PromoGuard\Reconciliation\WooCommerceReconciliation;
 use PromoGuard\Refund\WooCommerceRefundLifecycle;
 use PromoGuard\Reservation\WooCommerceOrderLifecycle;
 use PromoGuard\Reservation\WooCommerceUsageExpiration;
@@ -60,6 +61,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 		WooCommerceCheckout::from_wordpress()->register();
 		WooCommerceOrderLifecycle::from_wordpress()->register();
+		WooCommerceReconciliation::from_wordpress()->register();
 		WooCommerceRefundLifecycle::from_wordpress()->register();
 		WooCommerceUsageExpiration::from_wordpress()->register();
 
