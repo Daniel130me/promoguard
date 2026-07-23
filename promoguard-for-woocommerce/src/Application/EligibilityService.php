@@ -21,7 +21,7 @@ use PromoGuard\Support\Options;
 use RuntimeException;
 
 /** Coordinates safe identity resolution with the shared campaign policy engine. */
-final class EligibilityService {
+final class EligibilityService implements EligibilityEvaluator {
 	/**
 	 * Configure identity and policy dependencies.
 	 *
