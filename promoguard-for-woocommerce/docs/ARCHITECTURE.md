@@ -67,6 +67,13 @@ status, login, identity, customer usage, then same-campaign coupon conflicts.
 Early contexts may explicitly return provisional identity approval; final
 contexts fail closed when identity is absent or conflicting.
 
+Phase 5 resolves native coupon IDs to assignments and campaigns through indexed,
+request-cached lookups. Unassigned coupons return immediately to WooCommerce.
+Early coupon validation may defer missing guest identity; Classic and Store API
+checkout repeat the shared policy with final billing identity and block any
+denial. Equivalent decisions and negative assignment lookups are cached only for
+the current request.
+
 ## Performance baseline
 
 Installation uses one bounded metadata query for seven known tables. Identity
