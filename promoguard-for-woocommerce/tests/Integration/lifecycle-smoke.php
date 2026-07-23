@@ -8,6 +8,8 @@
  */
 
 use PromoGuard\Checkout\WooCommerceCheckout;
+use PromoGuard\Indexing\IndexingStatus;
+use PromoGuard\Indexing\WooCommerceHistoricalIndexing;
 use PromoGuard\Reconciliation\ReconciliationRepository;
 use PromoGuard\Reconciliation\ReconciliationService;
 use PromoGuard\Reconciliation\WooCommerceReconciliation;
@@ -363,4 +365,61 @@ promoguard_lifecycle_assert(
 	'PromoGuard recurring reconciliation action is not scheduled.'
 );
 
-WP_CLI::success( 'PromoGuard Phase 7 lifecycle smoke test passed.' );
+// Historical attribution requires an explicit current assignment.
+promoguard_lifecycle_response(
+	promoguard_lifecycle_request(
+		'POST',
+		sprintf( '/promoguard/v1/campaigns/%d/promotions', $campaign['id'] ),
+		array( 'external_id' => $coupon['external_id'] )
+	),
+	201
+);
+
+// A coupon attached after completion simulates an order that predates PromoGuard.
+$historical_order = wc_create_order();
+promoguard_lifecycle_assert( $historical_order instanceof WC_Order, 'Historical order fixture could not be created.' );
+$historical_order->set_billing_email( "historical-{$run_id}@example.com" );
+$historical_order->add_product( $product, 1 );
+$historical_order->calculate_totals();
+$historical_order->save();
+$historical_order->update_status( 'completed' );
+promoguard_lifecycle_assert( true === $historical_order->apply_coupon( $coupon_code ), 'Historical coupon fixture could not be attached.' );
+$historical_order->calculate_totals();
+$historical_order->save();
+
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Disposable pre-import assertion.
+$historical_usage_id = $wpdb->get_var(
+	$wpdb->prepare(
+		'SELECT id FROM %i WHERE order_id = %d AND campaign_id = %d',
+		TableNames::from_wordpress()->usages(),
+		$historical_order->get_id(),
+		$campaign['id']
+	)
+);
+promoguard_lifecycle_assert( null === $historical_usage_id, 'Historical fixture unexpectedly created live usage.' );
+
+$indexing = WooCommerceHistoricalIndexing::from_wordpress();
+$job      = $indexing->start( array( $historical_order->get_id() ), 1 );
+promoguard_lifecycle_assert( IndexingStatus::QUEUED === $job->status, 'Targeted historical job was not queued.' );
+$indexing->run( $job->id );
+$job = $indexing->current();
+promoguard_lifecycle_assert( null !== $job && IndexingStatus::COMPLETED === $job->status, 'Historical job did not complete.' );
+promoguard_lifecycle_assert( 1 === $job->imported, 'Historical job did not report one imported order.' );
+
+$historical_usage = promoguard_lifecycle_usage( $historical_order->get_id(), (int) $campaign['id'] );
+$historical_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $historical_usage['customer_id'] );
+promoguard_lifecycle_assert( UsageStatus::CONSUMED === $historical_usage['status'], 'Historical usage was not consumed.' );
+promoguard_lifecycle_assert( 1 === (int) $historical_state['consumed_count'], 'Historical aggregate was not incremented.' );
+
+$job = $indexing->restart();
+$job = $indexing->pause();
+promoguard_lifecycle_assert( IndexingStatus::PAUSED === $job->status, 'Historical job did not pause.' );
+$job = $indexing->resume();
+promoguard_lifecycle_assert( IndexingStatus::QUEUED === $job->status, 'Historical job did not resume.' );
+$indexing->run( $job->id );
+$job              = $indexing->current();
+$historical_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $historical_usage['customer_id'] );
+promoguard_lifecycle_assert( null !== $job && 0 === $job->imported && 1 === $job->skipped, 'Repeated import was not idempotent.' );
+promoguard_lifecycle_assert( 1 === (int) $historical_state['consumed_count'], 'Repeated import changed aggregate state.' );
+
+WP_CLI::success( 'PromoGuard Phase 8 lifecycle smoke test passed.' );
