@@ -117,6 +117,28 @@ repairs only divergent rows using the same state-first locking order as live
 transitions. The next Action Scheduler action is enqueued only when another batch
 is required, preventing long-running or unbounded requests.
 
+Phase 8 adds a resumable historical indexing application service. One
+non-autoloaded WordPress option stores the current job identifier, lifecycle
+status, cursor, counters, bounded target-order list, and bounded errors. WP-CLI
+provides start, status, pause, resume, retry, and restart controls. Action
+Scheduler runs the same service under the `promoguard` group; each callback
+claims its expected job identifier, so an action left behind by a restart exits
+without mutating the replacement job.
+
+Full-history jobs request ascending WooCommerce order IDs in bounded pages.
+Targeted jobs slice a validated, deduplicated order-ID list. Orders are then
+loaded through `wc_get_order()` and public CRUD methods, preserving HPOS and
+legacy compatibility. Each page bulk-loads all relevant PromoGuard assignments
+before resolving identities or opening transactions. Unassigned coupons and
+orders outside configured counted statuses stop before write work.
+
+Historical usage imports use the same customer identity rules and state-first
+locking order as live reservation transitions. The unique order/campaign usage
+key makes replay safe, and aggregate state changes only when a consumed usage is
+newly inserted. A historically fully refunded order whose immutable policy
+allows restoration is inserted directly as restored, without incrementing
+consumed totals.
+
 ## Performance baseline
 
 Installation uses one bounded metadata query for seven known tables. Identity
@@ -135,3 +157,9 @@ request-cached target resolution. Refund callbacks use indexed order/campaign
 usage lookups and do not scan order history. Reconciliation performs one bounded
 state query and one grouped aggregate query per batch, then writes only rows whose
 stored totals differ.
+
+Historical indexing adds one bounded WooCommerce order-ID request and one bulk,
+indexed campaign-assignment query per page. Order hydration is limited to that
+page, target lists and errors have fixed caps, and every imported
+customer/campaign pair uses a short state-first transaction. Continuations are
+scheduled only while another page remains, and replay does not inflate counters.

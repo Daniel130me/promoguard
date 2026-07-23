@@ -47,13 +47,15 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 147 unit tests with 378 assertions. `npm run check` passes JavaScript syntax
+and 160 unit tests with 421 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
-Phase 7 unit and static coverage includes shared checkout/admin reservation,
+Phase 8 unit and static coverage includes shared checkout/admin reservation,
 request-cache race bypass, lifecycle status routing, bounded expiration,
 snapshot-backed transitions, cumulative refund restoration, and bounded
-reconciliation.
+reconciliation. It also covers indexing job persistence and lifecycle controls,
+targeted and paginated order batches, safe identity outcomes, idempotent imports,
+and superseded Action Scheduler callbacks.
 
 The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP
 8.3. It verifies activation metadata, seven InnoDB tables, migration idempotency,
@@ -66,6 +68,12 @@ The Phase 7 lifecycle smoke test also passes on the pinned environment. It
 verifies partial refunds retain usage, a cumulative full refund restores it
 exactly once, corrupted aggregate state is rebuilt from usage rows, and both
 expiration and reconciliation jobs are registered with Action Scheduler.
+
+The Phase 8 historical indexing lifecycle smoke test passes on the same isolated
+environment. Targeted indexing through `wp promoguard index start` completed
+idempotently, and a full-history run completed in three bounded batches with 25
+orders processed, 3 imported, 22 skipped, and 0 failed. Pause, resume, retry,
+restart, persisted status reporting, and stale scheduled callbacks are covered.
 
 The campaign administration browser workflow is also verified at desktop and a
 375 x 812 viewport. It covers lifecycle mutations, lazy assignment loading,

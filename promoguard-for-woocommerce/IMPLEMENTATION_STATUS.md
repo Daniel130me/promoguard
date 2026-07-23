@@ -2,14 +2,16 @@
 
 ## Current phase
 
-Phase 7: refunds and reconciliation — implementation and isolated runtime gate complete.
+Phase 8: historical indexing — implementation and isolated runtime gate complete.
 
 Identity, deterministic eligibility, Classic/Store API checkout enforcement,
 deduplicated denial logging, and atomic reservation persistence are implemented.
 Order-status changes consume or release pending usages. Cumulative full refunds
 restore eligible consumption exactly once, and bounded reconciliation rebuilds
 customer/campaign aggregates from the usage ledger. Action Scheduler runs both
-expiration and reconciliation without loading unbounded datasets.
+expiration and reconciliation without loading unbounded datasets. Resumable
+historical indexing can now reconstruct campaign usage from existing
+WooCommerce orders without scanning order history during checkout.
 
 ## Completed
 
@@ -69,6 +71,17 @@ expiration and reconciliation without loading unbounded datasets.
 - [x] Bounded aggregate reconciliation from the authoritative usage ledger
 - [x] Action Scheduler-backed continuation for reconciliation batches
 
+### Historical indexing
+
+- [x] Persisted indexing job lifecycle with progress, counters, and bounded errors
+- [x] Full-history and targeted-order indexing with configurable bounded batches
+- [x] Pause, resume, retry-failed, and restart controls
+- [x] Action Scheduler orchestration with superseded-action protection
+- [x] WP-CLI start, status, pause, resume, retry, and restart commands
+- [x] WooCommerce CRUD order loading compatible with HPOS and legacy storage
+- [x] Identity-safe, idempotent usage imports and full-refund restoration policy
+- [x] Bulk assignment resolution and short state-first import transactions
+
 ### Campaign administration
 
 - [x] Capability-protected PromoGuard administration menu and page
@@ -88,7 +101,7 @@ expiration and reconciliation without loading unbounded datasets.
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 147 tests, 378 assertions
+  - PHPUnit: 160 tests, 421 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: da23eb881114
@@ -107,6 +120,14 @@ expiration and reconciliation without loading unbounded datasets.
     consumption
   - Covers partial-to-cumulative-full refund restoration exactly once, aggregate
     repair from usage rows, and expiration/reconciliation scheduler registration
+  - No XAMPP database was used
+- Isolated Phase 8 historical indexing smoke scenario: passed
+  - Lifecycle start, pause, resume, retry, restart, and completed-job handling passed
+  - Targeted public WP-CLI indexing completed idempotently
+  - A full historical scan completed in three batches: 25 processed, 3 imported,
+    22 skipped, 0 failed
+  - Superseded Action Scheduler callbacks safely exited without changing the
+    current job
   - No XAMPP database was used
 - Isolated browser workflow: passed
   - Campaign create/edit/schedule/pause/archive/delete flows verified through the
@@ -159,6 +180,15 @@ expiration and reconciliation without loading unbounded datasets.
 - Reconciliation selects a bounded page of customer/campaign states and computes
   ledger totals with one grouped query for that page; each changed state is
   repaired with the same state-first locking discipline as live transitions.
+- Historical indexing reads ascending WooCommerce order-ID pages in bounded
+  batches and loads order details through CRUD APIs, preserving HPOS compatibility.
+- Each import page resolves campaign assignments in one indexed bulk query before
+  identity or transaction work. Unrelated and non-counted orders short-circuit.
+- Usage upserts rely on the unique order/campaign key and lock customer/campaign
+  state first. Only newly consumed usage changes aggregate counters, so retries,
+  stale scheduled actions, and completed-job replays remain idempotent.
+- Indexing progress is stored in one non-autoloaded option. Target IDs, batch size,
+  and recorded errors are capped; continuations enqueue only while work remains.
 - The administration page enqueues assets only on its exact hook suffix. List
   requests are capped at 20 records per page, rows are built in one document
   fragment, and API content is inserted with textContent.
@@ -185,5 +215,5 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Historical indexing, full administration, analytics, privacy tools, and release
-hardening belong to the remaining phases.
+Full administration, analytics, privacy tools, and release hardening belong to
+the remaining phases.
