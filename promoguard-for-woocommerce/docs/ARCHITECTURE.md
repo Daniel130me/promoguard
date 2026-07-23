@@ -86,6 +86,12 @@ transaction. Only deadlocks and lock-wait timeouts receive three bounded retry
 attempts. Classic and Store API processed-order hooks share this reservation
 path immediately before payment; normal requests reuse the final cached
 evaluation, while a missing or provisional result is evaluated finally.
+Order-status changes then route pending usages through a separate lifecycle
+policy. Counted statuses consume the reservation, while configured failure and
+cancellation statuses release it. Both paths lock the authoritative
+campaign/customer state before the unique order/campaign usage row and update
+the usage snapshot and counters atomically. Repeated callbacks are idempotent
+because only pending rows may transition.
 
 ## Performance baseline
 
@@ -97,4 +103,6 @@ orders during checkout; historical reconstruction belongs only in bounded
 background jobs. Denial logging performs one prepared insert only when a unique
 denial is encountered during the request. Reservation queries use the unique
 campaign/customer and order/campaign indexes; expiration cleanup is restricted
-to the locked campaign/customer state.
+to the locked campaign/customer state. Lifecycle callbacks resolve at most one
+coupon item per campaign and use the same state-first lock order as reservation
+persistence to avoid cross-path deadlocks.

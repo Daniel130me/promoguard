@@ -6,8 +6,9 @@ Phase 6: reservations and lifecycle — in progress on the pinned default target
 
 Identity, deterministic eligibility, Classic/Store API checkout enforcement,
 deduplicated denial logging, and the atomic reservation persistence foundation
-are implemented. WooCommerce order-hook integration and lifecycle transitions are
-next.
+are implemented. WooCommerce order-status integration now consumes or releases
+pending usages atomically. Expiration batches and non-checkout order validation
+are next.
 
 ## Completed
 
@@ -53,6 +54,7 @@ next.
 - [x] Validated reservation request/result contracts and bounded contention retry
 - [x] Atomic state creation, row locking, expiry release, limit check, and pending usage persistence
 - [x] Classic and Store API processed-order reservation hooks before payment
+- [x] Idempotent order-status consumption and configured failure/cancellation release
 
 ### Campaign administration
 
@@ -73,7 +75,7 @@ next.
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 119 tests, 317 assertions
+  - PHPUnit: 123 tests, 327 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: da23eb881114
@@ -121,6 +123,10 @@ next.
 - Checkout resolves identity once per decision and carries only the internal customer ID into denial and reservation boundaries.
 - Reservation persistence locks the unique campaign/customer state before reconciling expiry, checking limits, and changing counters; it performs no remote work.
 - Reservation retries are capped at three and apply only to deadlocks and lock-wait timeouts; other failures stop immediately.
+- Order lifecycle policy, WooCommerce hook adaptation, and transactional
+  persistence are separate dependencies. Transitions use indexed
+  order/campaign lookups, preserve state-first locking, and update counters only
+  when a pending usage changes.
 - The administration page enqueues assets only on its exact hook suffix. List
   requests are capped at 20 records per page, rows are built in one document
   fragment, and API content is inserted with textContent.
@@ -147,6 +153,5 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Consumption, release, expiration batches, admin/REST validation, refunds,
-historical indexing, analytics, privacy tools, and release hardening belong to
-the remaining phases.
+Expiration batches, admin/REST validation, refunds, historical indexing,
+analytics, privacy tools, and release hardening belong to the remaining phases.

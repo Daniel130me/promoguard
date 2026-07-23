@@ -46,7 +46,7 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 119 unit tests with 317 assertions. `npm run check` passes JavaScript syntax
+and 123 unit tests with 327 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
 The Phase 5 checkout target, request-cache, and deduplicated denial-log paths are
