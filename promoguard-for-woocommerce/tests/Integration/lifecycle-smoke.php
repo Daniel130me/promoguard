@@ -1,6 +1,6 @@
 <?php
 /**
- * Disposable Phase 6 reservation and lifecycle smoke test.
+ * Disposable reservation, lifecycle, refund, and reconciliation smoke test.
  *
  * Run with: wp-env run cli wp eval-file tests/Integration/lifecycle-smoke.php
  *
@@ -8,6 +8,9 @@
  */
 
 use PromoGuard\Checkout\WooCommerceCheckout;
+use PromoGuard\Reconciliation\ReconciliationRepository;
+use PromoGuard\Reconciliation\ReconciliationService;
+use PromoGuard\Reconciliation\WooCommerceReconciliation;
 use PromoGuard\Reservation\UsageStatus;
 use PromoGuard\Reservation\WooCommerceOrderLifecycle;
 use PromoGuard\Reservation\WooCommerceUsageExpiration;
@@ -83,6 +86,26 @@ function promoguard_lifecycle_order( WC_Product $product, string $coupon_code, s
 	$order->save();
 
 	return $order;
+}
+
+/**
+ * Create one non-gateway refund through WooCommerce CRUD APIs.
+ *
+ * @param WC_Order $order  Order being refunded.
+ * @param string   $amount Positive refund amount.
+ */
+function promoguard_lifecycle_refund( WC_Order $order, string $amount ): WC_Order_Refund {
+	$refund = wc_create_refund(
+		array(
+			'order_id'       => $order->get_id(),
+			'amount'         => $amount,
+			'reason'         => 'Disposable PromoGuard lifecycle fixture.',
+			'refund_payment' => false,
+			'restock_items'  => false,
+		)
+	);
+	promoguard_lifecycle_assert( $refund instanceof WC_Order_Refund, 'WooCommerce refund creation failed.' );
+	return $refund;
 }
 
 /**
@@ -206,6 +229,38 @@ promoguard_lifecycle_assert(
 	'Denied admin order is missing its idempotency marker.'
 );
 
+// Partial refunds retain usage; the cumulative full refund restores it once.
+promoguard_lifecycle_refund( $admin_order, '40' );
+$admin_usage = promoguard_lifecycle_usage( $admin_order->get_id(), (int) $campaign['id'] );
+$admin_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $admin_usage['customer_id'] );
+promoguard_lifecycle_assert( UsageStatus::CONSUMED === $admin_usage['status'], 'Partial refund restored usage early.' );
+promoguard_lifecycle_assert( 1 === (int) $admin_state['consumed_count'], 'Partial refund changed consumption.' );
+
+$admin_order = wc_get_order( $admin_order->get_id() );
+promoguard_lifecycle_assert( $admin_order instanceof WC_Order, 'Refunded order could not be reloaded.' );
+$full_refund = promoguard_lifecycle_refund(
+	$admin_order,
+	wc_format_decimal( $admin_order->get_remaining_refund_amount(), wc_get_price_decimals() )
+);
+$admin_usage = promoguard_lifecycle_usage( $admin_order->get_id(), (int) $campaign['id'] );
+$admin_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $admin_usage['customer_id'] );
+promoguard_lifecycle_assert( UsageStatus::RESTORED === $admin_usage['status'], 'Cumulative full refund did not restore usage.' );
+promoguard_lifecycle_assert( 0 === (int) $admin_state['consumed_count'], 'Full refund did not decrement consumption.' );
+promoguard_lifecycle_assert( 0.0 === (float) $admin_state['total_discount'], 'Full refund did not restore discount totals.' );
+
+do_action( 'woocommerce_order_refunded', $admin_order->get_id(), $full_refund->get_id() );
+$admin_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $admin_usage['customer_id'] );
+promoguard_lifecycle_assert( 0 === (int) $admin_state['consumed_count'], 'Repeated refund hook restored usage twice.' );
+$admin_order = wc_get_order( $admin_order->get_id() );
+promoguard_lifecycle_assert( $admin_order instanceof WC_Order, 'Refunded order outcome could not be reloaded.' );
+$refund_marker = $admin_order->get_meta( '_promoguard_refund_outcomes', true );
+promoguard_lifecycle_assert(
+	is_array( $refund_marker )
+		&& isset( $refund_marker[ $campaign['id'] ] )
+		&& 'restored' === $refund_marker[ $campaign['id'] ],
+	'Full refund is missing its deduplicated outcome marker.'
+);
+
 // Checkout reservation retries are idempotent and failed payment releases once.
 $checkout     = WooCommerceCheckout::from_wordpress();
 $failed_order = promoguard_lifecycle_order( $product, $coupon_code, "failed-{$run_id}@example.com" );
@@ -238,6 +293,7 @@ WooCommerceUsageExpiration::from_wordpress()->run();
 $expired_usage = promoguard_lifecycle_usage( $expired_order->get_id(), (int) $campaign['id'] );
 promoguard_lifecycle_assert( UsageStatus::RELEASED === $expired_usage['status'], 'Expiration batch did not release usage.' );
 
+( WooCommerceUsageExpiration::from_wordpress() )->ensure_scheduled();
 promoguard_lifecycle_assert(
 	function_exists( 'as_has_scheduled_action' )
 		&& as_has_scheduled_action( 'promoguard_release_expired_reservations', array(), 'promoguard' ),
@@ -267,4 +323,44 @@ promoguard_lifecycle_assert(
 	'Lifecycle validation must not delete the native coupon.'
 );
 
-WP_CLI::success( 'PromoGuard Phase 6 lifecycle smoke test passed.' );
+// Reconciliation repairs deliberately corrupted aggregates from the usage ledger.
+$snapshot_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $snapshot_usage['customer_id'] );
+promoguard_lifecycle_assert( null !== $snapshot_state, 'Snapshot state is missing before reconciliation.' );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Disposable corruption fixture.
+$corrupted = $wpdb->update(
+	TableNames::from_wordpress()->customer_campaign_state(),
+	array(
+		'consumed_count' => 9,
+		'reserved_count' => 8,
+		'total_discount' => '999',
+	),
+	array( 'id' => $snapshot_state['id'] ),
+	array( '%d', '%d', '%s' ),
+	array( '%d' )
+);
+promoguard_lifecycle_assert( 1 === $corrupted, 'Reconciliation corruption fixture could not be written.' );
+
+$reconciliation = new ReconciliationService( new ReconciliationRepository( TableNames::from_wordpress() ) );
+$batch          = $reconciliation->reconcile_batch(
+	new DateTimeImmutable( current_time( 'mysql', true ), new DateTimeZone( 'UTC' ) ),
+	0,
+	100
+);
+promoguard_lifecycle_assert( $batch->processed > 0, 'Reconciliation did not inspect any state rows.' );
+promoguard_lifecycle_assert( $batch->changed > 0, 'Reconciliation did not repair corrupted state.' );
+$snapshot_state = promoguard_lifecycle_state( (int) $campaign['id'], (int) $snapshot_usage['customer_id'] );
+promoguard_lifecycle_assert( 1 === (int) $snapshot_state['consumed_count'], 'Rebuilt consumed count does not match usages.' );
+promoguard_lifecycle_assert( 0 === (int) $snapshot_state['reserved_count'], 'Rebuilt reserved count does not match usages.' );
+promoguard_lifecycle_assert(
+	(float) $snapshot_usage['discount_amount'] === (float) $snapshot_state['total_discount'],
+	'Rebuilt discount total does not match consumed usages.'
+);
+
+( WooCommerceReconciliation::from_wordpress() )->ensure_scheduled();
+promoguard_lifecycle_assert(
+	function_exists( 'as_has_scheduled_action' )
+		&& as_has_scheduled_action( 'promoguard_reconcile_usage_state', array( 0 ), 'promoguard' ),
+	'PromoGuard recurring reconciliation action is not scheduled.'
+);
+
+WP_CLI::success( 'PromoGuard Phase 7 lifecycle smoke test passed.' );
