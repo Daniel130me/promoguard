@@ -109,7 +109,7 @@ final class CampaignConfiguration {
 			}
 		}
 
-		if ( ! in_array( $usage_rules['refund_behavior'], self::refund_behaviors(), true ) ) {
+		if ( ! self::supports_refund_behavior( (string) $usage_rules['refund_behavior'] ) ) {
 			throw new InvalidArgumentException( 'Unsupported refund behavior.' );
 		}
 
@@ -149,6 +149,15 @@ final class CampaignConfiguration {
 	 */
 	public function settings(): array {
 		return $this->settings;
+	}
+
+	/**
+	 * Whether a value is a supported full-refund behavior.
+	 *
+	 * @param string $behavior Candidate policy value.
+	 */
+	public static function supports_refund_behavior( string $behavior ): bool {
+		return in_array( $behavior, self::refund_behaviors(), true );
 	}
 
 	/**

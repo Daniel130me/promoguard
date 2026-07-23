@@ -47,15 +47,7 @@ final class UsageTransition {
 		}
 
 		if (
-			! in_array(
-				$refund_behavior,
-				array(
-					CampaignConfiguration::REFUND_RESTORE,
-					CampaignConfiguration::REFUND_KEEP_CONSUMED,
-					CampaignConfiguration::REFUND_MANUAL_REVIEW,
-				),
-				true
-			)
+			! CampaignConfiguration::supports_refund_behavior( $refund_behavior )
 		) {
 			throw new InvalidArgumentException( 'Usage transition refund behavior is invalid.' );
 		}

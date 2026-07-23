@@ -22,6 +22,8 @@ final class CampaignConfigurationTest extends TestCase {
 		self::assertSame( 'lifetime', $configuration->usage_rules()['period'] );
 		self::assertSame( array( 'processing', 'completed' ), $configuration->usage_rules()['counted_statuses'] );
 		self::assertSame( 'restore', $configuration->usage_rules()['refund_behavior'] );
+		self::assertTrue( CampaignConfiguration::supports_refund_behavior( CampaignConfiguration::REFUND_RESTORE ) );
+		self::assertFalse( CampaignConfiguration::supports_refund_behavior( 'unsupported' ) );
 		self::assertSame( 1, $configuration->conflict_rules()['maximum_campaign_coupons_per_order'] );
 		self::assertFalse( $configuration->settings()['login_required'] );
 	}
