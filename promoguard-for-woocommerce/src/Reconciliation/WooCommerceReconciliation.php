@@ -7,7 +7,7 @@
 
 namespace PromoGuard\Reconciliation;
 
-use Action_Scheduler;
+use ActionScheduler;
 use DateTimeImmutable;
 use DateTimeZone;
 use PromoGuard\Support\TableNames;
@@ -44,8 +44,8 @@ final class WooCommerceReconciliation {
 	/** Ensure one weekly root reconciliation action exists. */
 	public function ensure_scheduled(): void {
 		if (
-			! class_exists( Action_Scheduler::class )
-			|| ! Action_Scheduler::is_initialized()
+			! class_exists( ActionScheduler::class )
+			|| ! ActionScheduler::is_initialized()
 			|| ! function_exists( 'as_has_scheduled_action' )
 			|| ! function_exists( 'as_schedule_recurring_action' )
 		) {
