@@ -10,6 +10,20 @@ namespace PromoGuard\Promotion;
 /** Defines the assignment operations required by campaign administration. */
 interface CampaignPromotionStore {
 	/**
+	 * Find one assignment by its unique source identity.
+	 *
+	 * @param string $source      Source key.
+	 * @param string $source_type Source promotion type.
+	 * @param string $external_id Stable source identifier.
+	 * @param bool   $for_update  Whether to lock the matching row.
+	 */
+	public function find_by_source(
+		string $source,
+		string $source_type,
+		string $external_id,
+		bool $for_update = false
+	): ?CampaignPromotion;
+	/**
 	 * Attach or explicitly reassign one promotion.
 	 *
 	 * @param int                 $campaign_id       Destination campaign ID.
