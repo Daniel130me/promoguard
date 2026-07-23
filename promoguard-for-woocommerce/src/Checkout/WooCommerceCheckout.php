@@ -14,8 +14,12 @@ use PromoGuard\Campaign\CampaignRepository;
 use PromoGuard\Decision\DecisionRepository;
 use PromoGuard\Decision\DenialLogger;
 use PromoGuard\Promotion\CampaignPromotionRepository;
+use PromoGuard\Reservation\ReservationRepository;
+use PromoGuard\Reservation\ReservationRequestFactory;
+use PromoGuard\Reservation\ReservationService;
 use PromoGuard\Support\TableNames;
 use RuntimeException;
+use Throwable;
 use WC_Coupon;
 use WC_Order;
 use WP_Error;
@@ -34,13 +38,17 @@ final class WooCommerceCheckout {
 	/**
 	 * Configure checkout validation and denial diagnostics.
 	 *
-	 * @param CheckoutValidator $validator  Request-cached validator.
-	 * @param DenialLogger      $denials    Request-deduplicated denial logger.
-	 * @param string            $request_id Request correlation ID.
+	 * @param CheckoutValidator         $validator    Request-cached validator.
+	 * @param DenialLogger              $denials      Request-deduplicated denial logger.
+	 * @param ReservationService        $reservations Atomic reservation service.
+	 * @param ReservationRequestFactory $requests     Reservation request factory.
+	 * @param string                    $request_id   Request correlation ID.
 	 */
 	public function __construct(
 		private readonly CheckoutValidator $validator,
 		private readonly DenialLogger $denials,
+		private readonly ReservationService $reservations,
+		private readonly ReservationRequestFactory $requests,
 		private readonly string $request_id
 	) {}
 
@@ -57,6 +65,8 @@ final class WooCommerceCheckout {
 				EligibilityService::from_wordpress()
 			),
 			new DenialLogger( new DecisionRepository( $tables ) ),
+			new ReservationService( new ReservationRepository( $tables ) ),
+			new ReservationRequestFactory(),
 			wp_generate_uuid4()
 		);
 	}
@@ -67,6 +77,8 @@ final class WooCommerceCheckout {
 		add_filter( 'woocommerce_coupon_error', array( $this, 'filter_coupon_error' ), 10, 3 );
 		add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_classic_checkout' ), 20, 2 );
 		add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'validate_store_api_checkout' ), 20, 2 );
+		add_action( 'woocommerce_checkout_order_processed', array( $this, 'reserve_classic_order' ), 20, 3 );
+		add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'reserve_store_api_order' ), 20 );
 	}
 
 	/**
@@ -207,10 +219,98 @@ final class WooCommerceCheckout {
 				false
 			);
 
-			if ( null !== $evaluation && ! $evaluation->decision->allowed ) {
-				$this->latest[ $coupon_id ] = $evaluation;
+			if ( null === $evaluation ) {
+				continue;
+			}
+
+			$this->latest[ $coupon_id ] = $evaluation;
+			if ( ! $evaluation->decision->allowed ) {
 				$this->denials->record( $evaluation, $this->request_id, $context, $now_gmt, $order_id );
 				$on_denied( $evaluation );
+			}
+		}
+	}
+
+	/**
+	 * Reserve protected coupons after Classic Checkout creates the payable order.
+	 *
+	 * @param int                 $order_id   WooCommerce order ID.
+	 * @param array<string,mixed> $posted_data Sanitized checkout data.
+	 * @param WC_Order            $order      Created order.
+	 * @throws RuntimeException When a protected campaign place cannot be reserved.
+	 */
+	public function reserve_classic_order( int $order_id, array $posted_data, WC_Order $order ): void {
+		unset( $posted_data );
+
+		if ( $order_id !== $order->get_id() ) {
+			throw new RuntimeException( 'Checkout order context is inconsistent.' );
+		}
+
+		$this->reserve_order( $order );
+	}
+
+	/**
+	 * Reserve protected coupons before Store API payment processing.
+	 *
+	 * @param WC_Order $order Processed Store API order.
+	 * @throws RuntimeException When a protected campaign place cannot be reserved.
+	 */
+	public function reserve_store_api_order( WC_Order $order ): void {
+		$this->reserve_order( $order );
+	}
+
+	/**
+	 * Reserve each unique protected campaign represented on the order.
+	 *
+	 * @param WC_Order $order Payable WooCommerce order.
+	 * @throws RuntimeException When final validation or reservation fails.
+	 */
+	private function reserve_order( WC_Order $order ): void {
+		$now_gmt    = $this->now_gmt();
+		$coupon_ids = $this->coupon_ids_from_codes( $order->get_coupon_codes() );
+
+		foreach ( array_unique( $coupon_ids ) as $coupon_id ) {
+			$evaluation = $this->latest[ $coupon_id ] ?? null;
+			if ( null === $evaluation || $evaluation->decision->provisional ) {
+				$evaluation = $this->validator->evaluate(
+					$coupon_id,
+					$coupon_ids,
+					$order->get_customer_id() > 0 ? $order->get_customer_id() : null,
+					$order->get_billing_email(),
+					$now_gmt,
+					false
+				);
+			}
+
+			if ( null === $evaluation ) {
+				continue;
+			}
+
+			if ( ! $evaluation->decision->allowed ) {
+				$this->denials->record(
+					$evaluation,
+					$this->request_id,
+					DenialLogger::CONTEXT_RESERVATION,
+					$now_gmt,
+					$order->get_id()
+				);
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Policy message is customer-safe and handled by WooCommerce's checkout boundary.
+				throw new RuntimeException( $evaluation->decision->customer_message );
+			}
+
+			try {
+				$request = $this->requests->create(
+					$evaluation,
+					$order->get_id(),
+					$order->get_currency(),
+					wp_generate_uuid4(),
+					$now_gmt
+				);
+				$this->reservations->reserve( $request );
+			} catch ( Throwable $exception ) {
+				$message = esc_html__( 'This promotion could not be reserved. Please try again.', 'promoguard-for-woocommerce' );
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Message is escaped; previous exception is diagnostic context only.
+				throw new RuntimeException( $message, 0, $exception );
 			}
 		}
 	}
