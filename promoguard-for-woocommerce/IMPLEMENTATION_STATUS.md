@@ -63,7 +63,7 @@ workflows are available through the capability-protected WordPress admin page.
   - PHPUnit: 68 tests, 181 assertions
 - npm run check: passed
   - JavaScript syntax: passed
-  - Generated asset version: da0635889a03
+  - Generated asset version: da23eb881114
 - Docker daemon: available, server 29.6.1
 - Isolated WordPress/WooCommerce activation and REST smoke test: passed
   - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3

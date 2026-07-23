@@ -14,6 +14,7 @@
 
 	const { __, sprintf } = window.wp.i18n;
 	const byId = ( id ) => document.getElementById( id );
+	const queryLimits = { assignments: 100, couponSearch: 20 };
 	const elements = {
 		cancel: byId( 'promoguard-create-cancel' ),
 		editArchive: byId( 'promoguard-edit-archive' ),
@@ -198,7 +199,7 @@
 		elements.couponSelect.replaceChildren( new Option( __( 'Search for a coupon first', 'promoguard-for-woocommerce' ), '' ) );
 		elements.couponSelect.disabled = true;
 		elements.couponAssign.disabled = true;
-		elements.couponSearchStatus.textContent = __( 'Search results are limited to 20 coupons.', 'promoguard-for-woocommerce' );
+		elements.couponSearchStatus.textContent = __( 'Search results are limited for performance.', 'promoguard-for-woocommerce' );
 		setCouponError();
 	}
 
@@ -250,7 +251,7 @@
 		setAssignmentBusy( true );
 		elements.assignmentsStatus.textContent = __( 'Loading assigned coupons…', 'promoguard-for-woocommerce' );
 		try {
-			const assignments = await request( `/campaigns/${ campaignId }/promotions?per_page=100` );
+			const assignments = await request( `/campaigns/${ campaignId }/promotions?per_page=${ queryLimits.assignments }` );
 			// Ignore late responses after the editor is closed or another campaign is opened.
 			if ( state.editingId === campaignId ) {
 				renderAssignments( assignments );
@@ -472,7 +473,7 @@
 	elements.couponSearchSubmit.addEventListener( 'click', async () => {
 		setCouponError();
 		setAssignmentBusy( true );
-		const query = new URLSearchParams( { per_page: '20', search: elements.couponSearch.value.trim() } );
+		const query = new URLSearchParams( { per_page: String( queryLimits.couponSearch ), search: elements.couponSearch.value.trim() } );
 		try {
 			const coupons = await request( `/coupons?${ query.toString() }` );
 			const placeholder = new Option( 0 === coupons.length ? __( 'No coupons found', 'promoguard-for-woocommerce' ) : __( 'Select a coupon', 'promoguard-for-woocommerce' ), '' );

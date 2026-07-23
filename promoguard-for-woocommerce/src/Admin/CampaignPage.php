@@ -210,7 +210,7 @@ final class CampaignPage {
 							</div>
 							<button class="button" id="promoguard-coupon-search-submit" type="button"><?php esc_html_e( 'Search coupons', 'promoguard-for-woocommerce' ); ?></button>
 						</div>
-						<p class="description" id="promoguard-coupon-search-status" role="status"><?php esc_html_e( 'Search results are limited to 20 coupons.', 'promoguard-for-woocommerce' ); ?></p>
+						<p class="description" id="promoguard-coupon-search-status" role="status"><?php esc_html_e( 'Search results are limited for performance.', 'promoguard-for-woocommerce' ); ?></p>
 						<div class="promoguard-admin__form-grid">
 							<div class="promoguard-admin__field promoguard-admin__field--wide">
 								<label for="promoguard-coupon-select"><?php esc_html_e( 'Coupon', 'promoguard-for-woocommerce' ); ?> <span aria-hidden="true">*</span></label>
