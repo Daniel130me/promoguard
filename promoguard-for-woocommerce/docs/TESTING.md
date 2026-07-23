@@ -46,7 +46,7 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 68 unit tests with 181 assertions. `npm run check` passes JavaScript syntax
+and 106 unit tests with 264 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
 The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP

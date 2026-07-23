@@ -6,10 +6,9 @@ WooCommerce owns coupons, discount calculation, taxes, orders, and order coupon
 items. PromoGuard owns campaign organization, shared eligibility, reservations,
 usage history, explanations, and campaign analytics.
 
-The MVP integrates only with native `WC_Coupon` objects. Future promotion
-sources must enter through a small source adapter introduced when the first
-source domain is implemented; Phase 0 intentionally does not add an empty
-interface.
+The MVP integrates only with native `WC_Coupon` objects through a promotion
+source contract. Campaign assignment records preserve source identity and
+display snapshots without taking ownership of the native coupon.
 
 ## Bootstrap flow
 
@@ -19,17 +18,17 @@ interface.
 3. `PromoGuard\Support\Requirements` checks the narrow, tested runtime range.
 4. Unsupported environments receive one safe administrator notice; storefront
    requests and sites without WooCommerce do not fatal.
-5. A supported environment fires `promoguard_loaded`. Domain services will be
-   wired behind this boundary in later phases.
+5. A supported environment fires `promoguard_loaded`. Application services
+   construct site-scoped repositories behind this boundary.
 
 ## Dependency direction
 
-Future UI and transport layers (Admin, REST, CLI, checkout hooks) depend on
+UI and transport layers (Admin, REST, CLI, checkout hooks) depend on
 application/domain services. Domain services may depend on small repository and
 promotion-source contracts. Business rules must not live in controllers, React
 components, or hook callbacks.
 
-Order access will use WooCommerce CRUD APIs exclusively so HPOS and legacy order
+Order access uses WooCommerce CRUD APIs exclusively so HPOS and legacy order
 storage can share the same implementation. SQL is reserved for indexed
 PromoGuard-owned tables and must always be prepared.
 
@@ -46,10 +45,33 @@ metadata query and fails closed unless the lock-sensitive state and usage tables
 use InnoDB. Uninstall preserves data by default and removes only centralized
 PromoGuard tables, options, and capabilities after explicit opt-in.
 
+## Campaigns, identity, and eligibility
+
+Phase 2 adds validated campaign aggregates, source-backed WooCommerce coupon
+assignments, REST application services, and the minimal campaign administration
+screen. Campaign operations never delete native coupons or historical snapshots.
+
+Phase 4 resolves authenticated WordPress users before considering email. Emails
+are conservatively normalized, HMAC-SHA256 hashed with the persistent
+non-autoloaded plugin key, and never stored raw. An unclaimed email may attach to
+an authenticated customer; an email-owned guest may merge transactionally; two
+authenticated customers never merge from email alone.
+
+Guest merges lock customer rows in primary-key order and atomically reconcile
+campaign counters, identifiers, usage rows, and decision rows before preserving
+the guest as a merge tombstone.
+
+The eligibility engine returns one immutable outcome with a stable reason code,
+safe customer message, and administrator explanation. Policy order is campaign
+status, login, identity, customer usage, then same-campaign coupon conflicts.
+Early contexts may explicitly return provisional identity approval; final
+contexts fail closed when identity is absent or conflicting.
+
 ## Performance baseline
 
-The storefront still performs constant-time version checks and no PromoGuard
-database queries. Installation uses one bounded metadata query for seven known
-tables. Later checkout work must resolve assignments and customer campaign state
-through bounded indexed lookups; historical order scans belong only in background
-jobs.
+Installation uses one bounded metadata query for seven known tables. Identity
+resolution uses unique user and type/hash indexes inside a short transaction.
+Eligibility short-circuits status, login, and identity failures before making at
+most one lookup through the unique campaign/customer state index. It never scans
+orders during checkout; historical reconstruction belongs only in bounded
+background jobs.
