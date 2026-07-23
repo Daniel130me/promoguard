@@ -46,13 +46,14 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 111 unit tests with 286 assertions. `npm run check` passes JavaScript syntax
+and 114 unit tests with 296 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
-The Phase 5 checkout target and request-cache paths are covered by unit and static
-checks. Classic and Store API end-to-end checkout coverage remains pending: the
-2026-07-23 disposable wp-env start produced only its MySQL container before timing
-out, and the partial environment was stopped cleanly.
+The Phase 5 checkout target, request-cache, and deduplicated denial-log paths are
+covered by unit and static checks. Classic and Store API end-to-end checkout
+coverage remains pending: the 2026-07-23 disposable wp-env start produced only
+its MySQL container before timing out, and the partial environment was stopped
+cleanly.
 
 The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP
 8.3. It verifies activation metadata, seven InnoDB tables, migration idempotency,

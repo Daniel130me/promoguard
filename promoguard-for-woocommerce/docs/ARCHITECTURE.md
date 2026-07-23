@@ -72,7 +72,10 @@ request-cached lookups. Unassigned coupons return immediately to WooCommerce.
 Early coupon validation may defer missing guest identity; Classic and Store API
 checkout repeat the shared policy with final billing identity and block any
 denial. Equivalent decisions and negative assignment lookups are cached only for
-the current request.
+the current request. Denied outcomes are written once per request, context,
+campaign, promotion, order, and reason to the plugin-owned decision table.
+Allowed and provisional outcomes do not create diagnostic writes, and raw
+customer identity is never included in denial metadata.
 
 ## Performance baseline
 
@@ -81,4 +84,5 @@ resolution uses unique user and type/hash indexes inside a short transaction.
 Eligibility short-circuits status, login, and identity failures before making at
 most one lookup through the unique campaign/customer state index. It never scans
 orders during checkout; historical reconstruction belongs only in bounded
-background jobs.
+background jobs. Denial logging performs one prepared insert only when a unique
+denial is encountered during the request.
