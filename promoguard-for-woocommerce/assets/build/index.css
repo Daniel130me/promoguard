@@ -52,6 +52,15 @@
 .promoguard-admin .promoguard-admin__danger:hover,
 .promoguard-admin .promoguard-admin__danger:focus { border-color: #8a2424; color: #8a2424; }
 .promoguard-admin__form-error { color: #b32d2e; font-weight: 600; }
+.promoguard-admin__assignments { border-top: 1px solid var(--promoguard-border); margin-top: 24px; padding-top: 20px; }
+.promoguard-admin__assignments .promoguard-admin__toolbar p { margin: 0; }
+.promoguard-admin__assignment-table-wrap { margin-bottom: 20px; }
+.promoguard-admin__coupon-form { background: var(--promoguard-soft); margin-top: 16px; padding: 16px; }
+.promoguard-admin__coupon-form .promoguard-admin__form-grid { margin: 16px 0; }
+.promoguard-admin__coupon-search { align-items: end; display: flex; gap: 12px; }
+.promoguard-admin__coupon-search .promoguard-admin__field { flex: 1 1 auto; }
+.promoguard-admin__checkbox { display: inline-flex; gap: 8px; margin-bottom: 4px; }
+.promoguard-admin__checkbox input { margin-top: 1px; }
 .promoguard-admin__filter label { font-weight: 600; }
 .promoguard-admin__table-wrap { margin: 16px -20px 0; }
 .promoguard-admin .widefat { border-left: 0; border-right: 0; }
@@ -101,6 +110,7 @@
 	.promoguard-admin__actions--spread { align-items: stretch; flex-direction: column; }
 	.promoguard-admin__actions--spread > .promoguard-admin__actions { flex-wrap: wrap; }
 	.promoguard-admin__filter { align-items: stretch; flex-wrap: wrap; }
+	.promoguard-admin__coupon-search { align-items: stretch; flex-direction: column; }
 	.promoguard-admin__filter label { flex-basis: 100%; }
 	.promoguard-admin__filter select { flex: 1 1 180px; }
 	.promoguard-admin__table-wrap { margin-left: 0; margin-right: 0; }

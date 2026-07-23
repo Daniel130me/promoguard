@@ -180,6 +180,64 @@ final class CampaignPage {
 					</div>
 					<p class="promoguard-admin__form-error" id="promoguard-edit-error" role="alert" hidden></p>
 				</form>
+				<div class="promoguard-admin__assignments" id="promoguard-assignments" aria-labelledby="promoguard-assignments-title">
+					<div class="promoguard-admin__toolbar">
+						<div>
+							<h3 id="promoguard-assignments-title"><?php esc_html_e( 'Assigned coupons', 'promoguard-for-woocommerce' ); ?></h3>
+							<p><?php esc_html_e( 'Assignments organize native WooCommerce coupons without changing or deleting them.', 'promoguard-for-woocommerce' ); ?></p>
+						</div>
+						<button class="button" id="promoguard-assignments-refresh" type="button"><?php esc_html_e( 'Refresh coupons', 'promoguard-for-woocommerce' ); ?></button>
+					</div>
+					<p id="promoguard-assignments-status" role="status"><?php esc_html_e( 'Loading assigned coupons…', 'promoguard-for-woocommerce' ); ?></p>
+					<div class="promoguard-admin__table-wrap promoguard-admin__assignment-table-wrap" id="promoguard-assignment-table-wrap" hidden>
+						<table class="widefat striped" id="promoguard-assignment-table">
+							<thead><tr>
+								<th scope="col"><?php esc_html_e( 'Coupon', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Label', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Channel', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Order', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Actions', 'promoguard-for-woocommerce' ); ?></th>
+							</tr></thead>
+							<tbody id="promoguard-assignment-rows"></tbody>
+						</table>
+					</div>
+					<form class="promoguard-admin__coupon-form" id="promoguard-coupon-form">
+						<h3><?php esc_html_e( 'Assign a coupon', 'promoguard-for-woocommerce' ); ?></h3>
+						<div class="promoguard-admin__coupon-search">
+							<div class="promoguard-admin__field">
+								<label for="promoguard-coupon-search"><?php esc_html_e( 'Find a WooCommerce coupon', 'promoguard-for-woocommerce' ); ?></label>
+								<input class="regular-text" id="promoguard-coupon-search" type="search" placeholder="<?php esc_attr_e( 'Search by coupon code', 'promoguard-for-woocommerce' ); ?>">
+							</div>
+							<button class="button" id="promoguard-coupon-search-submit" type="button"><?php esc_html_e( 'Search coupons', 'promoguard-for-woocommerce' ); ?></button>
+						</div>
+						<p class="description" id="promoguard-coupon-search-status" role="status"><?php esc_html_e( 'Search results are limited to 20 coupons.', 'promoguard-for-woocommerce' ); ?></p>
+						<div class="promoguard-admin__form-grid">
+							<div class="promoguard-admin__field promoguard-admin__field--wide">
+								<label for="promoguard-coupon-select"><?php esc_html_e( 'Coupon', 'promoguard-for-woocommerce' ); ?> <span aria-hidden="true">*</span></label>
+								<select id="promoguard-coupon-select" name="external_id" required disabled>
+									<option value=""><?php esc_html_e( 'Search for a coupon first', 'promoguard-for-woocommerce' ); ?></option>
+								</select>
+							</div>
+							<div class="promoguard-admin__field">
+								<label for="promoguard-coupon-label"><?php esc_html_e( 'Assignment label', 'promoguard-for-woocommerce' ); ?></label>
+								<input class="regular-text" id="promoguard-coupon-label" name="label" type="text" maxlength="190">
+							</div>
+							<div class="promoguard-admin__field">
+								<label for="promoguard-coupon-channel"><?php esc_html_e( 'Channel', 'promoguard-for-woocommerce' ); ?></label>
+								<input class="regular-text" id="promoguard-coupon-channel" name="channel" type="text" maxlength="50">
+							</div>
+						</div>
+						<label class="promoguard-admin__checkbox" for="promoguard-coupon-reassign">
+							<input id="promoguard-coupon-reassign" name="allow_reassignment" type="checkbox">
+							<?php esc_html_e( 'Move this coupon if it is assigned to another campaign', 'promoguard-for-woocommerce' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'Reassignment must be selected explicitly because it changes campaign ownership.', 'promoguard-for-woocommerce' ); ?></p>
+						<div class="promoguard-admin__actions">
+							<button class="button button-primary" id="promoguard-coupon-assign" type="submit" disabled><?php esc_html_e( 'Assign coupon', 'promoguard-for-woocommerce' ); ?></button>
+						</div>
+						<p class="promoguard-admin__form-error" id="promoguard-coupon-error" role="alert" hidden></p>
+					</form>
+				</div>
 			</section>
 			<section class="promoguard-admin__panel" aria-labelledby="promoguard-list-title">
 				<div class="promoguard-admin__toolbar">

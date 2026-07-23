@@ -34,6 +34,19 @@
 		editStarts: byId( 'promoguard-edit-starts' ),
 		editStatus: byId( 'promoguard-edit-status' ),
 		editSummary: byId( 'promoguard-edit-summary' ),
+		assignmentRows: byId( 'promoguard-assignment-rows' ),
+		assignmentTable: byId( 'promoguard-assignment-table' ),
+		assignmentTableWrap: byId( 'promoguard-assignment-table-wrap' ),
+		assignmentsRefresh: byId( 'promoguard-assignments-refresh' ),
+		assignmentsStatus: byId( 'promoguard-assignments-status' ),
+		couponAssign: byId( 'promoguard-coupon-assign' ),
+		couponError: byId( 'promoguard-coupon-error' ),
+		couponForm: byId( 'promoguard-coupon-form' ),
+		couponReassign: byId( 'promoguard-coupon-reassign' ),
+		couponSearch: byId( 'promoguard-coupon-search' ),
+		couponSearchStatus: byId( 'promoguard-coupon-search-status' ),
+		couponSearchSubmit: byId( 'promoguard-coupon-search-submit' ),
+		couponSelect: byId( 'promoguard-coupon-select' ),
 		empty: byId( 'promoguard-empty' ),
 		filter: byId( 'promoguard-status-filter' ),
 		form: byId( 'promoguard-create-form' ),
@@ -51,7 +64,7 @@
 		table: byId( 'promoguard-campaign-table' ),
 		toggle: byId( 'promoguard-create-toggle' ),
 	};
-	const state = { campaigns: new Map(), editingId: null, editTrigger: null, loading: false, page: 1, pages: 1, perPage: 20, slugDirty: false, status: '' };
+	const state = { assignmentLoading: false, campaigns: new Map(), editingId: null, editTrigger: null, loading: false, page: 1, pages: 1, perPage: 20, slugDirty: false, status: '' };
 	const statusLabels = {
 		active: __( 'Active', 'promoguard-for-woocommerce' ),
 		archived: __( 'Archived', 'promoguard-for-woocommerce' ),
@@ -165,6 +178,94 @@
 		elements.editCancel.disabled = busy;
 	}
 
+	function setCouponError( message = '' ) {
+		elements.couponError.textContent = message;
+		elements.couponError.hidden = ! message;
+	}
+
+	function setAssignmentBusy( busy ) {
+		state.assignmentLoading = busy;
+		elements.assignmentTable.setAttribute( 'aria-busy', String( busy ) );
+		elements.assignmentsRefresh.disabled = busy;
+		elements.couponSearch.disabled = busy;
+		elements.couponSearchSubmit.disabled = busy;
+		elements.couponSelect.disabled = busy || elements.couponSelect.options.length <= 1;
+		elements.couponAssign.disabled = busy || ! elements.couponSelect.value;
+	}
+
+	function resetCouponSearch() {
+		elements.couponForm.reset();
+		elements.couponSelect.replaceChildren( new Option( __( 'Search for a coupon first', 'promoguard-for-woocommerce' ), '' ) );
+		elements.couponSelect.disabled = true;
+		elements.couponAssign.disabled = true;
+		elements.couponSearchStatus.textContent = __( 'Search results are limited to 20 coupons.', 'promoguard-for-woocommerce' );
+		setCouponError();
+	}
+
+	function renderAssignments( assignments ) {
+		const campaign = state.campaigns.get( state.editingId );
+		const readOnly = 'archived' === campaign?.status;
+		const fragment = document.createDocumentFragment();
+
+		assignments.forEach( ( assignment ) => {
+			const row = document.createElement( 'tr' );
+			const coupon = createCell( __( 'Coupon', 'promoguard-for-woocommerce' ), 'promoguard-admin__identity' );
+			const code = document.createElement( 'strong' );
+			const identifier = document.createElement( 'code' );
+			code.textContent = assignment.external_code || __( 'Coupon', 'promoguard-for-woocommerce' );
+			identifier.textContent = `#${ assignment.external_id }`;
+			coupon.append( code, identifier );
+			const label = createCell( __( 'Label', 'promoguard-for-woocommerce' ) );
+			label.textContent = assignment.label || '—';
+			const channel = createCell( __( 'Channel', 'promoguard-for-woocommerce' ) );
+			channel.textContent = assignment.channel || '—';
+			const order = createCell( __( 'Order', 'promoguard-for-woocommerce' ), 'promoguard-admin__number' );
+			order.textContent = new Intl.NumberFormat().format( assignment.sort_order );
+			const actions = createCell( __( 'Actions', 'promoguard-for-woocommerce' ) );
+			if ( ! readOnly ) {
+				const detach = document.createElement( 'button' );
+				detach.className = 'button button-small promoguard-admin__danger';
+				detach.dataset.assignmentId = String( assignment.id );
+				detach.dataset.couponCode = assignment.external_code || assignment.external_id;
+				detach.type = 'button';
+				detach.textContent = __( 'Detach', 'promoguard-for-woocommerce' );
+				actions.append( detach );
+			} else {
+				actions.textContent = __( 'Read only', 'promoguard-for-woocommerce' );
+			}
+			row.append( coupon, label, channel, order, actions );
+			fragment.append( row );
+		} );
+		elements.assignmentRows.replaceChildren( fragment );
+		elements.assignmentTableWrap.hidden = 0 === assignments.length;
+		elements.assignmentsStatus.textContent = 0 === assignments.length
+			? __( 'No coupons are assigned to this campaign.', 'promoguard-for-woocommerce' )
+			: sprintf( __( '%d assigned coupons', 'promoguard-for-woocommerce' ), assignments.length );
+	}
+
+	async function loadAssignments( campaignId = state.editingId ) {
+		if ( null === campaignId ) {
+			return;
+		}
+		setAssignmentBusy( true );
+		elements.assignmentsStatus.textContent = __( 'Loading assigned coupons…', 'promoguard-for-woocommerce' );
+		try {
+			const assignments = await request( `/campaigns/${ campaignId }/promotions?per_page=100` );
+			// Ignore late responses after the editor is closed or another campaign is opened.
+			if ( state.editingId === campaignId ) {
+				renderAssignments( assignments );
+			}
+		} catch ( error ) {
+			if ( state.editingId === campaignId ) {
+				elements.assignmentsStatus.textContent = error.message;
+			}
+		} finally {
+			if ( state.editingId === campaignId ) {
+				setAssignmentBusy( false );
+			}
+		}
+	}
+
 	function inputDate( value ) {
 		return value ? value.slice( 0, 16 ) : '';
 	}
@@ -176,6 +277,9 @@
 	function closeEditor() {
 		elements.editPanel.hidden = true;
 		setEditError();
+		resetCouponSearch();
+		elements.assignmentRows.replaceChildren();
+		elements.assignmentTableWrap.hidden = true;
 		state.editingId = null;
 		state.editTrigger?.focus();
 		state.editTrigger = null;
@@ -203,14 +307,18 @@
 		elements.editArchive.hidden = 'archived' === campaign.status;
 		elements.editDelete.hidden = 'draft' !== campaign.status;
 		elements.editPanel.hidden = false;
+		elements.couponForm.hidden = 'archived' === campaign.status;
+		resetCouponSearch();
 		setEditError();
 		setEditBusy( false );
+		loadAssignments( campaignId );
 		elements.editPanel.scrollIntoView( { block: 'start' } );
-		elements.editName.focus();
+		( 'archived' === campaign.status ? elements.editCancel : elements.editName ).focus();
 	}
 
 	function renderRows( campaigns ) {
-		state.campaigns = new Map( campaigns.map( ( campaign ) => [ campaign.id, campaign ] ) );		const fragment = document.createDocumentFragment();
+		state.campaigns = new Map( campaigns.map( ( campaign ) => [ campaign.id, campaign ] ) );
+		const fragment = document.createDocumentFragment();
 		campaigns.forEach( ( campaign ) => {
 			const row = document.createElement( 'tr' );
 			const identity = createCell( __( 'Campaign', 'promoguard-for-woocommerce' ), 'promoguard-admin__identity' );
@@ -358,6 +466,88 @@
 		} catch ( error ) {
 			setEditError( error.message );
 			setEditBusy( false );
+		}
+	} );
+	elements.assignmentsRefresh.addEventListener( 'click', () => loadAssignments() );
+	elements.couponSearchSubmit.addEventListener( 'click', async () => {
+		setCouponError();
+		setAssignmentBusy( true );
+		const query = new URLSearchParams( { per_page: '20', search: elements.couponSearch.value.trim() } );
+		try {
+			const coupons = await request( `/coupons?${ query.toString() }` );
+			const placeholder = new Option( 0 === coupons.length ? __( 'No coupons found', 'promoguard-for-woocommerce' ) : __( 'Select a coupon', 'promoguard-for-woocommerce' ), '' );
+			const options = coupons.map( ( coupon ) => {
+				const option = new Option( coupon.label ? `${ coupon.code } — ${ coupon.label }` : coupon.code, coupon.external_id );
+				option.disabled = ! coupon.available;
+				return option;
+			} );
+			elements.couponSelect.replaceChildren( placeholder, ...options );
+			elements.couponSearchStatus.textContent = 0 === coupons.length ? __( 'No matching coupons found.', 'promoguard-for-woocommerce' ) : sprintf( __( '%d coupons found. Choose one to assign.', 'promoguard-for-woocommerce' ), coupons.length );
+		} catch ( error ) {
+			setCouponError( error.message );
+		} finally {
+			setAssignmentBusy( false );
+		}
+	} );
+	elements.couponSelect.addEventListener( 'change', () => {
+		elements.couponAssign.disabled = state.assignmentLoading || ! elements.couponSelect.value;
+	} );
+	elements.couponSearch.addEventListener( 'keydown', ( event ) => {
+		if ( 'Enter' === event.key ) {
+			event.preventDefault();
+			elements.couponSearchSubmit.click();
+		}
+	} );
+	elements.couponForm.addEventListener( 'submit', async ( event ) => {
+		event.preventDefault();
+		setCouponError();
+		if ( null === state.editingId || ! elements.couponForm.reportValidity() ) {
+			return;
+		}
+		const campaignId = state.editingId;
+		const formData = new window.FormData( elements.couponForm );
+		setAssignmentBusy( true );
+		try {
+			await request( `/campaigns/${ campaignId }/promotions`, {
+				body: JSON.stringify( {
+					allow_reassignment: elements.couponReassign.checked,
+					channel: String( formData.get( 'channel' ) || '' ).trim() || null,
+					external_id: String( formData.get( 'external_id' ) || '' ),
+					label: String( formData.get( 'label' ) || '' ).trim() || null,
+					sort_order: 0,
+				} ),
+				method: 'POST',
+			} );
+			if ( state.editingId === campaignId ) {
+				resetCouponSearch();
+				await loadAssignments( campaignId );
+				setNotice( __( 'Coupon assigned.', 'promoguard-for-woocommerce' ), 'success' );
+			}
+		} catch ( error ) {
+			setCouponError( error.message );
+			setAssignmentBusy( false );
+		}
+	} );
+	elements.assignmentRows.addEventListener( 'click', async ( event ) => {
+		const trigger = event.target instanceof Element ? event.target.closest( '[data-assignment-id]' ) : null;
+		if ( ! trigger || null === state.editingId ) {
+			return;
+		}
+		const couponCode = trigger.dataset.couponCode || '';
+		if ( ! window.confirm( sprintf( __( 'Detach coupon %s from this campaign? The WooCommerce coupon will not be deleted.', 'promoguard-for-woocommerce' ), couponCode ) ) ) {
+			return;
+		}
+		const campaignId = state.editingId;
+		setAssignmentBusy( true );
+		try {
+			await request( `/campaigns/${ campaignId }/promotions/${ trigger.dataset.assignmentId }`, { method: 'DELETE' } );
+			if ( state.editingId === campaignId ) {
+				await loadAssignments( campaignId );
+				setNotice( __( 'Coupon detached. The WooCommerce coupon was not changed.', 'promoguard-for-woocommerce' ), 'success' );
+			}
+		} catch ( error ) {
+			setCouponError( error.message );
+			setAssignmentBusy( false );
 		}
 	} );
 	elements.toggle.addEventListener( 'click', () => setCreatePanel( elements.panel.hidden ) );
