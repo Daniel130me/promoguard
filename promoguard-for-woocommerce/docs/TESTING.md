@@ -29,6 +29,7 @@ composer check
 npm run check
 npm run env:start
 npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/runtime-smoke.php
+npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/lifecycle-smoke.php
 npm run env:stop
 ```
 
@@ -46,14 +47,14 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 123 unit tests with 327 assertions. `npm run check` passes JavaScript syntax
+and 134 unit tests with 358 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
-The Phase 5 checkout target, request-cache, and deduplicated denial-log paths are
-covered by unit and static checks. Classic and Store API end-to-end checkout
-coverage remains pending: the 2026-07-23 disposable wp-env start produced only
-its MySQL container before timing out, and the partial environment was stopped
-cleanly.
+Phase 6 unit and static coverage includes shared checkout/admin reservation,
+request-cache race bypass, lifecycle status routing, bounded expiration, and
+snapshot-backed transitions. The dedicated lifecycle smoke scenario is ready but
+its 2026-07-23 wp-env run is pending because api.wordpress.org DNS resolution
+failed before any disposable containers started. The XAMPP database was not used.
 
 The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP
 8.3. It verifies activation metadata, seven InnoDB tables, migration idempotency,

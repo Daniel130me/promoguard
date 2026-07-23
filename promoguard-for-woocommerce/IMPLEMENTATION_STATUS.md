@@ -2,13 +2,14 @@
 
 ## Current phase
 
-Phase 6: reservations and lifecycle — in progress on the pinned default target.
+Phase 6: reservations and lifecycle — implementation complete; isolated runtime gate pending.
 
 Identity, deterministic eligibility, Classic/Store API checkout enforcement,
 deduplicated denial logging, and the atomic reservation persistence foundation
-are implemented. WooCommerce order-status integration now consumes or releases
-pending usages atomically. Expiration batches and non-checkout order validation
-are next.
+are implemented. WooCommerce order-status integration consumes or releases
+pending usages atomically, Action Scheduler releases expired reservations in
+bounded batches, and admin/REST-created orders receive final validation before
+first consumption. Phase 7 starts after the isolated Phase 6 runtime gate runs.
 
 ## Completed
 
@@ -55,6 +56,9 @@ are next.
 - [x] Atomic state creation, row locking, expiry release, limit check, and pending usage persistence
 - [x] Classic and Store API processed-order reservation hooks before payment
 - [x] Idempotent order-status consumption and configured failure/cancellation release
+- [x] Action Scheduler-backed bounded expiration cleanup
+- [x] Shared checkout and admin/REST final order validation and reservation
+- [x] Snapshot-backed lifecycle transitions after coupon detachment or deletion
 
 ### Campaign administration
 
@@ -75,7 +79,7 @@ are next.
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 123 tests, 327 assertions
+  - PHPUnit: 134 tests, 358 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: da23eb881114
@@ -88,6 +92,12 @@ are next.
     assignment, legacy empty-settings reads, explicit reassignment, archive
     immutability, safe deletion, and native coupon preservation passed
   - The existing XAMPP WordPress database was not used
+- Isolated Phase 6 lifecycle smoke scenario: locally validated, runtime pending
+  - Covers admin/REST consumption and denial, idempotent reservations/status
+    callbacks, failure release, expiry cleanup, scheduler registration, and
+    detached-assignment snapshot consumption
+  - 2026-07-23 wp-env start was blocked by DNS resolution for api.wordpress.org
+  - No XAMPP database was used as a fallback
 - Isolated browser workflow: passed
   - Campaign create/edit/schedule/pause/archive/delete flows verified through the
     live WordPress administration page
@@ -127,6 +137,13 @@ are next.
   persistence are separate dependencies. Transitions use indexed
   order/campaign lookups, preserve state-first locking, and update counters only
   when a pending usage changes.
+- Checkout and non-checkout orders share one reservation coordinator. One
+  order/campaign-indexed lookup skips active usages, while a fresh policy read is
+  reserved for atomic limit races so stale request cache entries cannot approve.
+- Expiration selects at most 50 rows through the status/expiry index and handles
+  each distinct campaign/customer state in its own short state-first transaction.
+- Pending lifecycle contexts come from PromoGuard usage snapshots joined by indexed
+  campaign ID, so coupon deletion or assignment detachment cannot strand usage.
 - The administration page enqueues assets only on its exact hook suffix. List
   requests are capped at 20 records per page, rows are built in one document
   fragment, and API content is inserted with textContent.
@@ -153,5 +170,5 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Expiration batches, admin/REST validation, refunds, historical indexing,
-analytics, privacy tools, and release hardening belong to the remaining phases.
+Refunds, reconciliation, historical indexing, full administration, analytics,
+privacy tools, and release hardening belong to the remaining phases.

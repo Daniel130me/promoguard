@@ -93,6 +93,16 @@ campaign/customer state before the unique order/campaign usage row and update
 the usage snapshot and counters atomically. Repeated callbacks are idempotent
 because only pending rows may transition.
 
+Admin/REST-created orders use the same final validator and reservation coordinator
+before their first counted status. Denials create a decision record and one
+idempotent order note/marker without removing coupon or financial data. Pending
+transitions are loaded from indexed PromoGuard usage snapshots rather than live
+coupon assignments, so later detachment or coupon deletion cannot strand usage.
+
+A five-minute Action Scheduler task releases expired reservations in batches of
+50 candidate rows. It selects through the status/expiry index, deduplicates
+campaign/customer states, and processes each state in its own short transaction.
+
 ## Performance baseline
 
 Installation uses one bounded metadata query for seven known tables. Identity
@@ -103,6 +113,8 @@ orders during checkout; historical reconstruction belongs only in bounded
 background jobs. Denial logging performs one prepared insert only when a unique
 denial is encountered during the request. Reservation queries use the unique
 campaign/customer and order/campaign indexes; expiration cleanup is restricted
-to the locked campaign/customer state. Lifecycle callbacks resolve at most one
-coupon item per campaign and use the same state-first lock order as reservation
-persistence to avoid cross-path deadlocks.
+to the locked campaign/customer state. Lifecycle callbacks perform one
+order/campaign-indexed snapshot lookup and use the same state-first lock order as
+reservation persistence to avoid cross-path
+deadlocks. Non-checkout validation adds one active-usage lookup and reuses
+request-cached target resolution.
