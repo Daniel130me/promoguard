@@ -2,10 +2,10 @@
 
 ## Current phase
 
-Phase 3: campaign administration.
+Phase 3: campaign administration — complete on the pinned default target.
 
-The first Phase 3 administration slice is complete on the pinned default target.
-Campaign editing and coupon assignment management remain in progress.
+Campaign creation, lifecycle management, archival, and native coupon assignment
+workflows are available through the capability-protected WordPress admin page.
 
 ## Completed
 
@@ -48,6 +48,9 @@ Campaign editing and coupon assignment management remain in progress.
 - [x] Bounded campaign list with status filtering and pagination
 - [x] Accessible loading, error, empty, success, and form-validation states
 - [x] Draft campaign creation with safe slug generation
+- [x] Campaign editing, scheduling, activation, pausing, archival, and safe Draft deletion
+- [x] Lazy, bounded assigned-coupon loading with archived read-only presentation
+- [x] Keyboard-accessible native coupon search, attach, explicit reassignment, and detach
 - [x] Responsive table-to-card layout for narrow WordPress admin viewports
 - [x] Pretty and plain-permalink REST URL compatibility
 
@@ -60,21 +63,23 @@ Campaign editing and coupon assignment management remain in progress.
   - PHPUnit: 68 tests, 181 assertions
 - npm run check: passed
   - JavaScript syntax: passed
-  - Generated asset version: 767c823a01d8
+  - Generated asset version: da0635889a03
 - Docker daemon: available, server 29.6.1
 - Isolated WordPress/WooCommerce activation and REST smoke test: passed
   - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3
   - Seven PromoGuard tables present and using InnoDB
   - Versioned migration confirmed idempotent
   - Capability recovery, anonymous denial, campaign/coupon creation, atomic
-    assignment, explicit reassignment, archive immutability, safe deletion, and
-    native coupon preservation passed
+    assignment, legacy empty-settings reads, explicit reassignment, archive
+    immutability, safe deletion, and native coupon preservation passed
   - The existing XAMPP WordPress database was not used
 - Isolated browser workflow: passed
-  - Campaign list, Draft creation, slug generation, success notice, and Draft
-    filter verified through the live WordPress administration page
-  - Plain-permalink REST requests returned 200 and browser console errors: 0
-  - Responsive campaign cards verified at a 375 x 812 viewport
+  - Campaign create/edit/schedule/pause/archive/delete flows verified through the
+    live WordPress administration page
+  - Lazy assignment listing, Enter-key coupon search, attach metadata, detach,
+    coupon preservation, and archived read-only controls verified
+  - Plain-permalink REST requests passed and a fresh browser console had 0 errors
+  - Responsive campaign and assignment layouts verified at 375 x 812
 
 ## Maintainability and performance review
 
@@ -104,6 +109,12 @@ Campaign editing and coupon assignment management remain in progress.
 - The administration page enqueues assets only on its exact hook suffix. List
   requests are capped at 20 records per page, rows are built in one document
   fragment, and API content is inserted with textContent.
+- Opening a campaign reuses the current list snapshot and lazily issues one
+  indexed assignment query capped at 100. Coupon search runs only on explicit
+  user action, returns at most 20 results, and disables found unavailable items.
+- Assignment requests ignore late responses after an editor switch or close.
+  Historical empty settings encoded as `[]` remain readable, while malformed
+  non-empty arrays are still rejected.
 - Native WordPress controls, visible labels, keyboard focus management, live
   regions, text status labels, and reduced-motion handling keep the UI aligned
   with WordPress and accessible without adding a frontend framework.
@@ -121,7 +132,6 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Campaign editing, activation controls, archiving, and native coupon assignment
-management remain in Phase 3. Identity, eligibility, checkout enforcement,
-reservations, order lifecycle handling, refunds, historical indexing, analytics,
-privacy tools, and release hardening belong to later phases.
+Identity, eligibility, checkout enforcement, reservations, order lifecycle
+handling, refunds, historical indexing, analytics, privacy tools, and release
+hardening belong to later phases.

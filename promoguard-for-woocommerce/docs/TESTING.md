@@ -6,7 +6,7 @@ Never run automated order, refund, uninstall, migration, or concurrency tests
 against an existing WordPress database. The repository's `.wp-env.json` creates
 disposable Docker-backed development and test sites for integration work.
 
-## Local audit (2026-07-22)
+## Local audit (2026-07-23)
 
 | Tool | Result |
 |---|---|
@@ -52,6 +52,11 @@ and the deterministic asset build.
 The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP
 8.3. It verifies activation metadata, seven InnoDB tables, migration idempotency,
 role capabilities, anonymous REST denial, campaign and coupon creation, atomic
-assignment and explicit reassignment, archive immutability, safe Draft deletion,
-and preservation of the native WooCommerce coupon. The existing XAMPP database
-is never used.
+assignment and explicit reassignment, legacy empty-settings compatibility,
+assignment listing, archive immutability, safe Draft deletion, and preservation
+of the native WooCommerce coupon. The existing XAMPP database is never used.
+
+The campaign administration browser workflow is also verified at desktop and a
+375 x 812 viewport. It covers lifecycle mutations, lazy assignment loading,
+keyboard coupon search, attach/detach metadata, archived read-only controls, and
+a clean console after reload.
