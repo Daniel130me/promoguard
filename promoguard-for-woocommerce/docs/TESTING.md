@@ -47,14 +47,13 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 134 unit tests with 358 assertions. `npm run check` passes JavaScript syntax
+and 147 unit tests with 378 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
-Phase 6 unit and static coverage includes shared checkout/admin reservation,
-request-cache race bypass, lifecycle status routing, bounded expiration, and
-snapshot-backed transitions. The dedicated lifecycle smoke scenario is ready but
-its 2026-07-23 wp-env run is pending because api.wordpress.org DNS resolution
-failed before any disposable containers started. The XAMPP database was not used.
+Phase 7 unit and static coverage includes shared checkout/admin reservation,
+request-cache race bypass, lifecycle status routing, bounded expiration,
+snapshot-backed transitions, cumulative refund restoration, and bounded
+reconciliation.
 
 The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PHP
 8.3. It verifies activation metadata, seven InnoDB tables, migration idempotency,
@@ -62,6 +61,11 @@ role capabilities, anonymous REST denial, campaign and coupon creation, atomic
 assignment and explicit reassignment, legacy empty-settings compatibility,
 assignment listing, archive immutability, safe Draft deletion, and preservation
 of the native WooCommerce coupon. The existing XAMPP database is never used.
+
+The Phase 7 lifecycle smoke test also passes on the pinned environment. It
+verifies partial refunds retain usage, a cumulative full refund restores it
+exactly once, corrupted aggregate state is rebuilt from usage rows, and both
+expiration and reconciliation jobs are registered with Action Scheduler.
 
 The campaign administration browser workflow is also verified at desktop and a
 375 x 812 viewport. It covers lifecycle mutations, lazy assignment loading,

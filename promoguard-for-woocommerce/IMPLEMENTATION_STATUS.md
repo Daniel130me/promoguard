@@ -2,14 +2,14 @@
 
 ## Current phase
 
-Phase 6: reservations and lifecycle — implementation complete; isolated runtime gate pending.
+Phase 7: refunds and reconciliation — implementation and isolated runtime gate complete.
 
 Identity, deterministic eligibility, Classic/Store API checkout enforcement,
-deduplicated denial logging, and the atomic reservation persistence foundation
-are implemented. WooCommerce order-status integration consumes or releases
-pending usages atomically, Action Scheduler releases expired reservations in
-bounded batches, and admin/REST-created orders receive final validation before
-first consumption. Phase 7 starts after the isolated Phase 6 runtime gate runs.
+deduplicated denial logging, and atomic reservation persistence are implemented.
+Order-status changes consume or release pending usages. Cumulative full refunds
+restore eligible consumption exactly once, and bounded reconciliation rebuilds
+customer/campaign aggregates from the usage ledger. Action Scheduler runs both
+expiration and reconciliation without loading unbounded datasets.
 
 ## Completed
 
@@ -60,6 +60,15 @@ first consumption. Phase 7 starts after the isolated Phase 6 runtime gate runs.
 - [x] Shared checkout and admin/REST final order validation and reservation
 - [x] Snapshot-backed lifecycle transitions after coupon detachment or deletion
 
+### Refunds and reconciliation
+
+- [x] Immutable refund-policy snapshots on consumed usages
+- [x] Cumulative full-refund detection through WooCommerce CRUD APIs
+- [x] Idempotent consumed-to-restored transitions and order outcome markers
+- [x] Atomic restoration of consumed counters and discount totals
+- [x] Bounded aggregate reconciliation from the authoritative usage ledger
+- [x] Action Scheduler-backed continuation for reconciliation batches
+
 ### Campaign administration
 
 - [x] Capability-protected PromoGuard administration menu and page
@@ -79,7 +88,7 @@ first consumption. Phase 7 starts after the isolated Phase 6 runtime gate runs.
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 134 tests, 358 assertions
+  - PHPUnit: 147 tests, 378 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: da23eb881114
@@ -92,12 +101,13 @@ first consumption. Phase 7 starts after the isolated Phase 6 runtime gate runs.
     assignment, legacy empty-settings reads, explicit reassignment, archive
     immutability, safe deletion, and native coupon preservation passed
   - The existing XAMPP WordPress database was not used
-- Isolated Phase 6 lifecycle smoke scenario: locally validated, runtime pending
+- Isolated Phase 7 lifecycle smoke scenario: passed
   - Covers admin/REST consumption and denial, idempotent reservations/status
-    callbacks, failure release, expiry cleanup, scheduler registration, and
-    detached-assignment snapshot consumption
-  - 2026-07-23 wp-env start was blocked by DNS resolution for api.wordpress.org
-  - No XAMPP database was used as a fallback
+    callbacks, failure release, expiry cleanup, and detached-assignment snapshot
+    consumption
+  - Covers partial-to-cumulative-full refund restoration exactly once, aggregate
+    repair from usage rows, and expiration/reconciliation scheduler registration
+  - No XAMPP database was used
 - Isolated browser workflow: passed
   - Campaign create/edit/schedule/pause/archive/delete flows verified through the
     live WordPress administration page
@@ -144,6 +154,11 @@ first consumption. Phase 7 starts after the isolated Phase 6 runtime gate runs.
   each distinct campaign/customer state in its own short state-first transaction.
 - Pending lifecycle contexts come from PromoGuard usage snapshots joined by indexed
   campaign ID, so coupon deletion or assignment detachment cannot strand usage.
+- Refund handling reads WooCommerce order/refund state through CRUD APIs and
+  restores only consumed rows whose immutable snapshot permits restoration.
+- Reconciliation selects a bounded page of customer/campaign states and computes
+  ledger totals with one grouped query for that page; each changed state is
+  repaired with the same state-first locking discipline as live transitions.
 - The administration page enqueues assets only on its exact hook suffix. List
   requests are capped at 20 records per page, rows are built in one document
   fragment, and API content is inserted with textContent.
@@ -170,5 +185,5 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Refunds, reconciliation, historical indexing, full administration, analytics,
-privacy tools, and release hardening belong to the remaining phases.
+Historical indexing, full administration, analytics, privacy tools, and release
+hardening belong to the remaining phases.

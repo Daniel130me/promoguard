@@ -103,6 +103,20 @@ A five-minute Action Scheduler task releases expired reservations in batches of
 50 candidate rows. It selects through the status/expiry index, deduplicates
 campaign/customer states, and processes each state in its own short transaction.
 
+Phase 7 snapshots the refund policy when pending usage becomes consumed. Refund
+hooks calculate the cumulative refunded amount through WooCommerce CRUD APIs;
+only a fully refunded order can restore an eligible consumed usage. Restoration
+locks campaign/customer state before the usage row, decrements consumed totals,
+and records a deduplicated per-campaign outcome on the order. Partial and repeated
+refund callbacks therefore leave aggregate state unchanged.
+
+Reconciliation treats usage rows as the authoritative ledger. A scheduled,
+bounded batch selects customer/campaign state after a numeric cursor, obtains
+aggregate consumed/reserved counts and discount totals in one grouped query, and
+repairs only divergent rows using the same state-first locking order as live
+transitions. The next Action Scheduler action is enqueued only when another batch
+is required, preventing long-running or unbounded requests.
+
 ## Performance baseline
 
 Installation uses one bounded metadata query for seven known tables. Identity
@@ -117,4 +131,7 @@ to the locked campaign/customer state. Lifecycle callbacks perform one
 order/campaign-indexed snapshot lookup and use the same state-first lock order as
 reservation persistence to avoid cross-path
 deadlocks. Non-checkout validation adds one active-usage lookup and reuses
-request-cached target resolution.
+request-cached target resolution. Refund callbacks use indexed order/campaign
+usage lookups and do not scan order history. Reconciliation performs one bounded
+state query and one grouped aggregate query per batch, then writes only rows whose
+stored totals differ.
