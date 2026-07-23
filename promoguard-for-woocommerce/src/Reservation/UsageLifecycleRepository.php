@@ -77,7 +77,7 @@ final class UsageLifecycleRepository implements UsageLifecycleStore {
 			}
 
 			$changed = UsageStatus::CONSUMED === $target_status
-				? $this->consume_locked( $wpdb, $transition, $customer_id, $usage['id'] )
+				? $this->consume_locked( $wpdb, $transition, $customer_id, $usage )
 				: $this->release_locked( $wpdb, $transition, $customer_id, $usage['id'] );
 
 			$this->query( $wpdb, 'COMMIT', 'Could not commit the usage lifecycle transition.' );
@@ -160,12 +160,12 @@ final class UsageLifecycleRepository implements UsageLifecycleStore {
 	 * @param wpdb            $wpdb        WordPress database connection.
 	 * @param UsageTransition $transition  Validated transition facts.
 	 * @param int             $customer_id Pre-read internal customer ID.
-	 * @return array{id:int,status:string}|null
+	 * @return array{id:int,status:string,metadata:string}|null
 	 * @throws RuntimeException When the usage row cannot be locked.
 	 */
 	private function lock_usage( wpdb $wpdb, UsageTransition $transition, int $customer_id ): ?array {
 		$sql = $wpdb->prepare(
-			'SELECT id, status FROM %i
+			'SELECT id, status, metadata FROM %i
 			 WHERE order_id = %d AND campaign_id = %d AND customer_id = %d
 			 LIMIT 1 FOR UPDATE',
 			$this->tables->usages(),
@@ -190,31 +190,33 @@ final class UsageLifecycleRepository implements UsageLifecycleStore {
 		}
 
 		return array(
-			'id'     => (int) $row['id'],
-			'status' => (string) $row['status'],
+			'id'       => (int) $row['id'],
+			'status'   => (string) $row['status'],
+			'metadata' => (string) $row['metadata'],
 		);
 	}
 
 	/**
 	 * Consume the locked usage and update counters exactly once.
 	 *
-	 * @param wpdb            $wpdb        WordPress database connection.
-	 * @param UsageTransition $transition  Validated transition facts.
-	 * @param int             $customer_id Internal customer ID.
-	 * @param int             $usage_id    Locked usage ID.
+	 * @param wpdb                                        $wpdb        WordPress database connection.
+	 * @param UsageTransition                             $transition  Validated transition facts.
+	 * @param int                                         $customer_id Internal customer ID.
+	 * @param array{id:int,status:string,metadata:string} $usage       Locked usage row.
 	 * @throws RuntimeException When consumption persistence fails.
 	 */
 	private function consume_locked(
 		wpdb $wpdb,
 		UsageTransition $transition,
 		int $customer_id,
-		int $usage_id
+		array $usage
 	): bool {
 		$time          = $transition->occurred_at_gmt->format( 'Y-m-d H:i:s' );
+		$metadata      = $this->with_refund_behavior( $usage['metadata'], $transition->refund_behavior );
 		$sql           = $wpdb->prepare(
 			'UPDATE %i
 			 SET status = %s, order_status = %s, discount_amount = %s,
-			     consumed_at_gmt = %s, updated_at_gmt = %s
+			     consumed_at_gmt = %s, updated_at_gmt = %s, metadata = %s
 			 WHERE id = %d AND status = %s',
 			$this->tables->usages(),
 			UsageStatus::CONSUMED,
@@ -222,7 +224,8 @@ final class UsageLifecycleRepository implements UsageLifecycleStore {
 			$transition->discount_amount,
 			$time,
 			$time,
-			$usage_id,
+			$metadata,
+			$usage['id'],
 			UsageStatus::PENDING
 		);
 		$usage_changed = $this->query( $wpdb, $sql, 'Could not consume the pending usage.' );
@@ -256,6 +259,28 @@ final class UsageLifecycleRepository implements UsageLifecycleStore {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Merge the immutable refund policy into existing usage metadata.
+	 *
+	 * @param string $encoded_metadata Existing JSON object.
+	 * @param string $refund_behavior  Validated full-refund policy.
+	 * @throws RuntimeException When existing metadata cannot be preserved.
+	 */
+	private function with_refund_behavior( string $encoded_metadata, string $refund_behavior ): string {
+		$metadata = json_decode( $encoded_metadata, true );
+		if ( ! is_array( $metadata ) ) {
+			throw new RuntimeException( 'Usage metadata is invalid.' );
+		}
+
+		$metadata['refund_behavior'] = $refund_behavior;
+		$encoded                     = wp_json_encode( $metadata );
+		if ( false === $encoded ) {
+			throw new RuntimeException( 'Could not encode the usage refund policy.' );
+		}
+
+		return $encoded;
 	}
 
 	/**

@@ -135,6 +135,7 @@ final class WooCommerceOrderLifecycle {
 					order_id: $order_id,
 					order_status: $new_status,
 					discount_amount: $discount,
+					refund_behavior: (string) $context->usage_rules['refund_behavior'],
 					occurred_at_gmt: $now_gmt
 				),
 				$context->usage_rules

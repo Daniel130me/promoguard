@@ -85,6 +85,7 @@ final class UsageLifecycleServiceTest extends TestCase {
 			order_id: 101,
 			order_status: $status,
 			discount_amount: '10.50',
+			refund_behavior: CampaignConfiguration::REFUND_RESTORE,
 			occurred_at_gmt: new DateTimeImmutable( '2026-07-23 13:00:00', new DateTimeZone( 'UTC' ) )
 		);
 	}
