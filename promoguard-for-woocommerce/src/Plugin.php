@@ -11,6 +11,7 @@ use Automattic\WooCommerce\Utilities\FeaturesUtil;
 use PromoGuard\Activation\Installer;
 use PromoGuard\Admin\CampaignPage;
 use PromoGuard\Api\AdministrationController;
+use PromoGuard\Api\AdministrationToolController;
 use PromoGuard\Api\CampaignController;
 use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Indexing\HistoricalIndexingCommand;
@@ -66,6 +67,7 @@ final class Plugin {
 		WooCommerceCheckout::from_wordpress()->register();
 		$historical_indexing = WooCommerceHistoricalIndexing::from_wordpress();
 		$historical_indexing->register();
+		add_action( 'rest_api_init', array( AdministrationToolController::from_wordpress( $historical_indexing ), 'register_routes' ) );
 		HistoricalIndexingCommand::register( $historical_indexing );
 		WooCommerceOrderLifecycle::from_wordpress()->register();
 		WooCommerceReconciliation::from_wordpress()->register();
