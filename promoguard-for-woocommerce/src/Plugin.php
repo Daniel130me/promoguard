@@ -10,6 +10,7 @@ namespace PromoGuard;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
 use PromoGuard\Activation\Installer;
 use PromoGuard\Admin\CampaignPage;
+use PromoGuard\Api\AdministrationController;
 use PromoGuard\Api\CampaignController;
 use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Indexing\HistoricalIndexingCommand;
@@ -60,6 +61,7 @@ final class Plugin {
 		 * @param string $version Active PromoGuard version.
 		 */
 		do_action( 'promoguard_loaded', PROMOGUARD_VERSION );
+		add_action( 'rest_api_init', array( AdministrationController::from_wordpress(), 'register_routes' ) );
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 		WooCommerceCheckout::from_wordpress()->register();
 		$historical_indexing = WooCommerceHistoricalIndexing::from_wordpress();
