@@ -107,7 +107,11 @@ final class WooCommerceHistoricalIndexing {
 		}
 
 		try {
-			$next = $this->jobs->record_batch( $job_id, $this->processor->process( $job ), $this->now() );
+			$batch = $this->processor->process( $job );
+			$next  = $this->jobs->record_batch( $job_id, $batch, $this->now() );
+			if ( $batch->imported > 0 ) {
+				do_action( 'promoguard_analytics_changed' );
+			}
 			if ( IndexingStatus::QUEUED === $next->status ) {
 				$this->enqueue( $next );
 			}

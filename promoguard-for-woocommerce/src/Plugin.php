@@ -12,7 +12,9 @@ use PromoGuard\Activation\Installer;
 use PromoGuard\Admin\CampaignPage;
 use PromoGuard\Api\AdministrationController;
 use PromoGuard\Api\AdministrationToolController;
+use PromoGuard\Api\AnalyticsController;
 use PromoGuard\Api\CampaignController;
+use PromoGuard\Analytics\CachedAnalyticsStore;
 use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Indexing\HistoricalIndexingCommand;
 use PromoGuard\Indexing\WooCommerceHistoricalIndexing;
@@ -55,6 +57,7 @@ final class Plugin {
 
 		// WooCommerce may create its Shop Manager role after PromoGuard activates.
 		Capabilities::install();
+		CachedAnalyticsStore::register_invalidation();
 
 		/**
 		 * Fires after PromoGuard has passed dependency checks.
@@ -63,6 +66,7 @@ final class Plugin {
 		 */
 		do_action( 'promoguard_loaded', PROMOGUARD_VERSION );
 		add_action( 'rest_api_init', array( AdministrationController::from_wordpress(), 'register_routes' ) );
+		add_action( 'rest_api_init', array( AnalyticsController::from_wordpress(), 'register_routes' ) );
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 		WooCommerceCheckout::from_wordpress()->register();
 		$historical_indexing = WooCommerceHistoricalIndexing::from_wordpress();

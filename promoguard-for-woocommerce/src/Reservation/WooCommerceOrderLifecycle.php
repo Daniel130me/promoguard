@@ -129,7 +129,7 @@ final class WooCommerceOrderLifecycle {
 				: wc_format_coupon_code( $context->coupon_code );
 			$discount   = null === $coupon_key ? '0' : ( $discounts[ $coupon_key ] ?? '0' );
 
-			$this->lifecycle->transition(
+			$outcome = $this->lifecycle->transition(
 				new UsageTransition(
 					campaign_id: $context->campaign_id,
 					order_id: $order_id,
@@ -140,6 +140,9 @@ final class WooCommerceOrderLifecycle {
 				),
 				$context->usage_rules
 			);
+			if ( UsageLifecycleService::UNCHANGED !== $outcome ) {
+				do_action( 'promoguard_analytics_changed' );
+			}
 		}
 	}
 

@@ -14,7 +14,7 @@ use PromoGuard\Support\Options;
 final class OptionsTest extends TestCase {
 	/** All authoritative option names are unique and plugin-prefixed. */
 	public function test_option_names_are_bounded_and_prefixed(): void {
-		self::assertCount( 8, array_unique( Options::names() ) );
+		self::assertCount( 9, array_unique( Options::names() ) );
 
 		foreach ( Options::names() as $option_name ) {
 			self::assertStringStartsWith( 'promoguard_', $option_name );

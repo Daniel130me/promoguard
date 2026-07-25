@@ -61,6 +61,9 @@ final class WooCommerceRefundLifecycle {
 				new DateTimeImmutable( current_time( 'mysql', true ), new DateTimeZone( 'UTC' ) )
 			)
 		);
+		if ( array_diff( $outcomes, array( RefundService::UNCHANGED ) ) ) {
+			do_action( 'promoguard_analytics_changed' );
+		}
 		$this->record_outcomes( $order, $refund_id, $outcomes );
 	}
 
