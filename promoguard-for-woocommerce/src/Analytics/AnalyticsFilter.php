@@ -12,7 +12,7 @@ use DomainException;
 
 /** Carries a bounded half-open GMT reporting period and optional campaign. */
 final class AnalyticsFilter {
-	public const MAX_DAYS = 366;
+	public const MAX_DAYS         = 366;
 	private const SECONDS_PER_DAY = 86400;
 
 	/**
@@ -21,6 +21,7 @@ final class AnalyticsFilter {
 	 * @param DateTimeImmutable $starts_at_gmt Inclusive report start.
 	 * @param DateTimeImmutable $ends_at_gmt   Exclusive report end.
 	 * @param int|null          $campaign_id   Optional campaign identifier.
+	 * @throws DomainException When the range, timezone, or campaign is invalid.
 	 */
 	public function __construct(
 		public readonly DateTimeImmutable $starts_at_gmt,
