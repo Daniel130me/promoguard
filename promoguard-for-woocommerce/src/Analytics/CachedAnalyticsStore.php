@@ -84,7 +84,10 @@ final class CachedAnalyticsStore implements AnalyticsStore {
 	 * @param mixed $value Cached value.
 	 * @return array{
 	 *   totals: array{redemptions:int,unique_customers:int,campaign_orders:int,global_orders:int,refunds:int,denials:int},
-	 *   currencies: array<int,array{currency:string,discount_amount:string,restored_discount_amount:string}>,
+	 *   currencies: array<int,array{
+	 *     currency:string,redemptions:int,refunds:int,discount_amount:string,restored_discount_amount:string,
+	 *     order_count:int,revenue_amount:string,average_order_amount:string,average_discount_amount:string
+	 *   }>,
 	 *   denial_reasons: array<int,array{reason:string,count:int}>
 	 * }|null
 	 */
@@ -118,20 +121,41 @@ final class CachedAnalyticsStore implements AnalyticsStore {
 		foreach ( $value['currencies'] as $row ) {
 			if (
 				! is_array( $row )
-				|| ! isset( $row['currency'], $row['discount_amount'], $row['restored_discount_amount'] )
+				|| ! isset(
+					$row['currency'],
+					$row['redemptions'],
+					$row['refunds'],
+					$row['discount_amount'],
+					$row['restored_discount_amount'],
+					$row['order_count'],
+					$row['revenue_amount'],
+					$row['average_order_amount'],
+					$row['average_discount_amount']
+				)
 				|| ! is_string( $row['currency'] )
+				|| ! is_numeric( $row['redemptions'] )
+				|| ! is_numeric( $row['refunds'] )
 				|| ! is_numeric( $row['discount_amount'] )
 				|| ! is_numeric( $row['restored_discount_amount'] )
+				|| ! is_numeric( $row['order_count'] )
+				|| ! is_numeric( $row['revenue_amount'] )
+				|| ! is_numeric( $row['average_order_amount'] )
+				|| ! is_numeric( $row['average_discount_amount'] )
 			) {
 				return null;
 			}
 			$currencies[] = array(
 				'currency'                 => $row['currency'],
+				'redemptions'              => (int) $row['redemptions'],
+				'refunds'                  => (int) $row['refunds'],
 				'discount_amount'          => (string) $row['discount_amount'],
 				'restored_discount_amount' => (string) $row['restored_discount_amount'],
+				'order_count'              => (int) $row['order_count'],
+				'revenue_amount'           => (string) $row['revenue_amount'],
+				'average_order_amount'     => (string) $row['average_order_amount'],
+				'average_discount_amount'  => (string) $row['average_discount_amount'],
 			);
 		}
-
 		$reasons = array();
 		foreach ( $value['denial_reasons'] as $row ) {
 			if (

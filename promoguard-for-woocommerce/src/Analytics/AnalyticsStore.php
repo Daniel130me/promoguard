@@ -15,7 +15,10 @@ interface AnalyticsStore {
 	 * @param AnalyticsFilter $filter Validated report filters.
 	 * @return array{
 	 *   totals: array{redemptions:int,unique_customers:int,campaign_orders:int,global_orders:int,refunds:int,denials:int},
-	 *   currencies: array<int,array{currency:string,discount_amount:string,restored_discount_amount:string}>,
+	 *   currencies: array<int,array{
+	 *     currency:string,redemptions:int,refunds:int,discount_amount:string,restored_discount_amount:string,
+	 *     order_count?:int,revenue_amount?:string,average_order_amount?:string,average_discount_amount?:string
+	 *   }>,
 	 *   denial_reasons: array<int,array{reason:string,count:int}>
 	 * }
 	 */

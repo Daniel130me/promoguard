@@ -13,7 +13,7 @@ use RuntimeException;
 use wpdb;
 
 /** Aggregates promotion performance from plugin-owned, date-indexed tables. */
-final class AnalyticsRepository implements AnalyticsStore {
+final class AnalyticsRepository implements AnalyticsStore, OrderIdPageSource {
 	private const MAX_REASON_GROUPS = 20;
 
 	/**
@@ -117,10 +117,12 @@ final class AnalyticsRepository implements AnalyticsStore {
 	 *
 	 * @param wpdb            $wpdb   WordPress database adapter.
 	 * @param AnalyticsFilter $filter Validated report filters.
-	 * @return array<int,array{currency:string,discount_amount:string,restored_discount_amount:string}>
+	 * @return array<int,array{currency:string,redemptions:int,refunds:int,discount_amount:string,restored_discount_amount:string}>
 	 */
 	private function currency_totals( wpdb $wpdb, AnalyticsFilter $filter ): array {
 		$arguments = array(
+			UsageStatus::CONSUMED,
+			UsageStatus::RESTORED,
 			UsageStatus::CONSUMED,
 			UsageStatus::RESTORED,
 			$this->tables->usages(),
@@ -134,6 +136,8 @@ final class AnalyticsRepository implements AnalyticsStore {
 			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Variadic argument list matches the fixed query placeholders.
 			$prepared = $wpdb->prepare(
 				'SELECT currency,
+					COALESCE(SUM(status = %s), 0) AS redemptions,
+					COALESCE(SUM(status = %s), 0) AS refunds,
 					COALESCE(SUM(CASE WHEN status = %s THEN discount_amount ELSE 0 END), 0) AS discount_amount,
 					COALESCE(SUM(CASE WHEN status = %s THEN discount_amount ELSE 0 END), 0) AS restored_discount_amount
 				 FROM %i
@@ -146,6 +150,8 @@ final class AnalyticsRepository implements AnalyticsStore {
 			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Variadic argument list matches the fixed query placeholders.
 			$prepared = $wpdb->prepare(
 				'SELECT currency,
+					COALESCE(SUM(status = %s), 0) AS redemptions,
+					COALESCE(SUM(status = %s), 0) AS refunds,
 					COALESCE(SUM(CASE WHEN status = %s THEN discount_amount ELSE 0 END), 0) AS discount_amount,
 					COALESCE(SUM(CASE WHEN status = %s THEN discount_amount ELSE 0 END), 0) AS restored_discount_amount
 				 FROM %i
@@ -159,8 +165,10 @@ final class AnalyticsRepository implements AnalyticsStore {
 		$rows = $this->rows( $wpdb, $prepared, 'Analytics currency totals could not be loaded.' );
 
 		return array_map(
-			static fn ( array $row ): array => array(
+			fn ( array $row ): array => array(
 				'currency'                 => isset( $row['currency'] ) ? (string) $row['currency'] : '',
+				'redemptions'              => $this->integer( $row, 'redemptions' ),
+				'refunds'                  => $this->integer( $row, 'refunds' ),
 				'discount_amount'          => isset( $row['discount_amount'] ) ? (string) $row['discount_amount'] : '0',
 				'restored_discount_amount' => isset( $row['restored_discount_amount'] ) ? (string) $row['restored_discount_amount'] : '0',
 			),
@@ -168,6 +176,55 @@ final class AnalyticsRepository implements AnalyticsStore {
 		);
 	}
 
+	/**
+	 * Return one bounded page of distinct consumed order IDs.
+	 *
+	 * @param AnalyticsFilter $filter         Validated report filters.
+	 * @param int             $after_order_id Exclusive order-ID cursor.
+	 * @param int             $limit          Maximum page size.
+	 * @return int[]
+	 */
+	public function order_ids_after( AnalyticsFilter $filter, int $after_order_id, int $limit ): array {
+		global $wpdb;
+
+		$limit = max( 1, min( 100, $limit ) );
+		$args  = array(
+			$this->tables->usages(),
+			$filter->database_start(),
+			$filter->database_end(),
+			UsageStatus::CONSUMED,
+			max( 0, $after_order_id ),
+		);
+
+		if ( null === $filter->campaign_id ) {
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Variadic arguments match the fixed query placeholders.
+			$prepared = $wpdb->prepare(
+				'SELECT DISTINCT order_id FROM %i
+				 WHERE consumed_at_gmt >= %s AND consumed_at_gmt < %s
+				   AND status = %s AND order_id > %d
+				 ORDER BY order_id ASC LIMIT %d',
+				...array_merge( $args, array( $limit ) )
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Variadic arguments match the fixed query placeholders.
+			$prepared = $wpdb->prepare(
+				'SELECT DISTINCT order_id FROM %i
+				 WHERE consumed_at_gmt >= %s AND consumed_at_gmt < %s
+				   AND status = %s AND order_id > %d AND campaign_id = %d
+				 ORDER BY order_id ASC LIMIT %d',
+				...array_merge( $args, array( $filter->campaign_id, $limit ) )
+			);
+		}
+
+		$rows = $this->rows( $wpdb, $prepared, 'Analytics order IDs could not be loaded.' );
+
+		return array_values(
+			array_filter(
+				array_map( fn ( array $row ): int => $this->integer( $row, 'order_id' ), $rows ),
+				static fn ( int $order_id ): bool => $order_id > $after_order_id
+			)
+		);
+	}
 	/**
 	 * Return the bounded denial-reason distribution.
 	 *

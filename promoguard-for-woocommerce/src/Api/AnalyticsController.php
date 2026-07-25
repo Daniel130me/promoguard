@@ -12,8 +12,11 @@ use DateTimeZone;
 use DomainException;
 use PromoGuard\Analytics\AnalyticsFilter;
 use PromoGuard\Analytics\AnalyticsRepository;
+use PromoGuard\Analytics\AnalyticsService;
 use PromoGuard\Analytics\AnalyticsStore;
 use PromoGuard\Analytics\CachedAnalyticsStore;
+use PromoGuard\Analytics\OrderRevenueCalculator;
+use PromoGuard\Analytics\WooCommerceOrderProvider;
 use PromoGuard\Support\Capabilities;
 use Throwable;
 use WP_Error;
@@ -35,8 +38,15 @@ final class AnalyticsController {
 
 	/** Build the controller for the active WordPress site. */
 	public static function from_wordpress(): self {
+		$repository = AnalyticsRepository::from_wordpress();
+
 		return new self(
-			new CachedAnalyticsStore( AnalyticsRepository::from_wordpress() )
+			new CachedAnalyticsStore(
+				new AnalyticsService(
+					$repository,
+					new OrderRevenueCalculator( $repository, new WooCommerceOrderProvider() )
+				)
+			)
 		);
 	}
 
