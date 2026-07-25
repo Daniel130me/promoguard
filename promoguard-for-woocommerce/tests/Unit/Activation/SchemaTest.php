@@ -42,6 +42,12 @@ final class SchemaTest extends TestCase {
 		self::assertStringContainsString( 'KEY status_expiry (status, reserved_until_gmt)', $this->schema_sql );
 	}
 
+	/** Global analytics periods use date-leading indexes instead of table scans. */
+	public function test_analytics_date_indexes_are_present(): void {
+		self::assertStringContainsString( 'KEY consumed_at_gmt (consumed_at_gmt)', $this->schema_sql );
+		self::assertStringContainsString( 'KEY created_at_gmt (created_at_gmt)', $this->schema_sql );
+	}
+
 	/** Customer identifiers remain hashed and unique without storing raw email. */
 	public function test_customer_identifier_privacy_contract(): void {
 		self::assertStringContainsString( 'identifier_hash char(64) NOT NULL', $this->schema_sql );

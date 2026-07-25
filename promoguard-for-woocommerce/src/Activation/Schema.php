@@ -144,7 +144,8 @@ final class Schema {
 				KEY campaign_customer_status (campaign_id, customer_id, status),
 				KEY customer_status (customer_id, status),
 				KEY status_expiry (status, reserved_until_gmt),
-				KEY campaign_consumed (campaign_id, consumed_at_gmt)
+				KEY campaign_consumed (campaign_id, consumed_at_gmt),
+				KEY consumed_at_gmt (consumed_at_gmt)
 			) {$engine_and_character_set};",
 			"CREATE TABLE {$decisions} (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -165,6 +166,7 @@ final class Schema {
 				PRIMARY KEY  (id),
 				KEY request_id (request_id),
 				KEY campaign_created (campaign_id, created_at_gmt),
+				KEY created_at_gmt (created_at_gmt),
 				KEY customer_created (customer_id, created_at_gmt),
 				KEY decision_reason (decision, reason),
 				KEY order_id (order_id)
