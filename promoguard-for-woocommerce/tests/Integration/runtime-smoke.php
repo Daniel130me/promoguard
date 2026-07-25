@@ -42,7 +42,11 @@ function promoguard_smoke_request( string $method, string $route, array $body = 
 	$request                                = new WP_REST_Request( $method, $route );
 
 	if ( array() !== $body ) {
-		$request->set_body_params( $body );
+		if ( 'GET' === $method ) {
+			$request->set_query_params( $body );
+		} else {
+			$request->set_body_params( $body );
+		}
 	}
 
 	return rest_do_request( $request );
@@ -132,6 +136,7 @@ foreach (
 		'/promoguard/v1/administration/overview',
 		'/promoguard/v1/administration/usages',
 		'/promoguard/v1/administration/decisions',
+		'/promoguard/v1/analytics/summary',
 		'/promoguard/v1/administration/settings',
 		'/promoguard/v1/administration/indexing',
 	) as $administration_route
@@ -146,6 +151,10 @@ foreach (
 wp_set_current_user( (int) $shop_manager_user_id );
 promoguard_smoke_expect_status(
 	promoguard_smoke_request( 'GET', '/promoguard/v1/administration/overview' ),
+	200
+);
+promoguard_smoke_expect_status(
+	promoguard_smoke_request( 'GET', '/promoguard/v1/analytics/summary' ),
 	200
 );
 promoguard_smoke_expect_status(
@@ -317,6 +326,172 @@ promoguard_smoke_expect_status(
 );
 promoguard_smoke_assert( wc_get_coupon_id_by_code( $coupon_code ) === (int) $coupon['external_id'], 'Campaign operations must not delete the native coupon.' );
 
+$analytics_time = current_time( 'mysql', true );
+promoguard_smoke_assert(
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Creates one disposable analytics customer fixture.
+	false !== $wpdb->insert(
+		$tables->customers(),
+		array(
+			'wp_user_id'              => null,
+			'merged_into_customer_id' => null,
+			'created_at_gmt'          => $analytics_time,
+			'updated_at_gmt'          => $analytics_time,
+		)
+	),
+	'Analytics customer fixture could not be created.'
+);
+$analytics_customer_id = (int) $wpdb->insert_id;
+$analytics_order_base  = (int) sprintf( '%u', crc32( $run_id ) ) * 10;
+
+/**
+ * Insert one isolated usage fact for analytics verification.
+ *
+ * @param string $status   Usage status.
+ * @param int    $offset   Stable order offset.
+ * @param string $amount   Discount amount.
+ * @param string $currency Order currency.
+ */
+$insert_analytics_usage = static function (
+	string $status,
+	int $offset,
+	string $amount,
+	string $currency
+) use (
+	$wpdb,
+	$tables,
+	$campaign_two,
+	$reassigned,
+	$analytics_customer_id,
+	$analytics_order_base,
+	$analytics_time,
+	$coupon,
+	$coupon_code
+): void {
+	$uuid = wp_generate_uuid4();
+	promoguard_smoke_assert(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Creates one disposable analytics usage fixture.
+		false !== $wpdb->insert(
+			$tables->usages(),
+			array(
+				'uuid'            => $uuid,
+				'campaign_id'     => $campaign_two['id'],
+				'promotion_id'    => $reassigned['id'],
+				'customer_id'     => $analytics_customer_id,
+				'order_id'        => $analytics_order_base + $offset,
+				'coupon_id'       => $coupon['external_id'],
+				'coupon_code'     => $coupon_code,
+				'status'          => $status,
+				'order_status'    => 'completed',
+				'discount_amount' => $amount,
+				'currency'        => $currency,
+				'reservation_key' => hash( 'sha256', $uuid ),
+				'consumed_at_gmt' => $analytics_time,
+				'restored_at_gmt' => 'restored' === $status ? $analytics_time : null,
+				'created_at_gmt'  => $analytics_time,
+				'updated_at_gmt'  => $analytics_time,
+				'metadata'        => '{}',
+			)
+		),
+		'Analytics usage fixture could not be created.'
+	);
+};
+
+$insert_analytics_usage( 'consumed', 1, '10', 'USD' );
+$insert_analytics_usage( 'consumed', 2, '5', 'EUR' );
+$insert_analytics_usage( 'restored', 3, '7', 'USD' );
+
+foreach ( array( 'customer_limit_reached', 'campaign_paused' ) as $reason ) {
+	promoguard_smoke_assert(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Creates one disposable analytics denial fixture.
+		false !== $wpdb->insert(
+			$tables->decisions(),
+			array(
+				'request_id'        => wp_generate_uuid4(),
+				'campaign_id'       => $campaign_two['id'],
+				'promotion_id'      => $reassigned['id'],
+				'customer_id'       => $analytics_customer_id,
+				'coupon_id'         => $coupon['external_id'],
+				'coupon_code'       => $coupon_code,
+				'context'           => 'runtime_smoke',
+				'decision'          => 'denied',
+				'reason'            => $reason,
+				'customer_message'  => 'Promotion unavailable.',
+				'admin_explanation' => 'Disposable analytics fixture.',
+				'metadata'          => '{}',
+				'created_at_gmt'    => $analytics_time,
+			)
+		),
+		'Analytics denial fixture could not be created.'
+	);
+}
+
+$period_end   = new DateTimeImmutable( '+1 day', new DateTimeZone( 'UTC' ) );
+$period_start = $period_end->modify( '-2 days' );
+$analytics    = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/summary',
+		array(
+			'starts_at_gmt' => $period_start->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+			'campaign_id'   => $campaign_two['id'],
+		)
+	),
+	200
+);
+promoguard_smoke_assert(
+	2 === $analytics['totals']['redemptions'],
+	'Analytics redemptions do not reconcile: ' . wp_json_encode( $analytics )
+);
+promoguard_smoke_assert( 1 === $analytics['totals']['unique_customers'], 'Analytics customers must be distinct across currencies.' );
+promoguard_smoke_assert( 2 === $analytics['totals']['global_orders'], 'Analytics global orders must be distinct.' );
+promoguard_smoke_assert( 1 === $analytics['totals']['refunds'], 'Analytics restored usage count does not reconcile.' );
+promoguard_smoke_assert( 2 === $analytics['totals']['denials'], 'Analytics denial count does not reconcile.' );
+$currency_totals = array_column( $analytics['currencies'], null, 'currency' );
+promoguard_smoke_assert( '5.00000000' === $currency_totals['EUR']['discount_amount'], 'EUR analytics discount is incorrect.' );
+promoguard_smoke_assert( '10.00000000' === $currency_totals['USD']['discount_amount'], 'USD analytics discount is incorrect.' );
+promoguard_smoke_assert( '7.00000000' === $currency_totals['USD']['restored_discount_amount'], 'USD restored discount is incorrect.' );
+
+$insert_analytics_usage( 'consumed', 4, '2', 'USD' );
+$cached_analytics = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/summary',
+		array(
+			'starts_at_gmt' => $period_start->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+			'campaign_id'   => $campaign_two['id'],
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 2 === $cached_analytics['totals']['redemptions'], 'Analytics summary was not served from cache.' );
+do_action( 'promoguard_analytics_changed' );
+$invalidated_analytics = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/summary',
+		array(
+			'starts_at_gmt' => $period_start->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+			'campaign_id'   => $campaign_two['id'],
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 3 === $invalidated_analytics['totals']['redemptions'], 'Analytics cache invalidation did not expose the new usage.' );
+
+promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/summary',
+		array(
+			'starts_at_gmt' => $period_end->modify( '-400 days' )->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+		)
+	),
+	400
+);
 promoguard_smoke_expect_status(
 	promoguard_smoke_request( 'DELETE', sprintf( '/promoguard/v1/campaigns/%d', $campaign_one['id'] ) ),
 	204

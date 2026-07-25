@@ -58,6 +58,9 @@ final class Plugin {
 		// WooCommerce may create its Shop Manager role after PromoGuard activates.
 		Capabilities::install();
 		CachedAnalyticsStore::register_invalidation();
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			Installer::maybe_upgrade();
+		}
 
 		/**
 		 * Fires after PromoGuard has passed dependency checks.
