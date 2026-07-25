@@ -237,3 +237,65 @@
 @media (prefers-reduced-motion: no-preference) {
 	.promoguard-workspace__nav-item { transition: border-color 160ms ease-out, color 160ms ease-out; }
 }
+
+.promoguard-tools__health,
+.promoguard-tools__job-heading {
+	align-items: center;
+	background: var(--promoguard-soft);
+	border: 1px solid var(--promoguard-border);
+	display: flex;
+	justify-content: space-between;
+	margin: 16px 0;
+	padding: 16px;
+}
+
+.promoguard-tools__health h3,
+.promoguard-tools__health p,
+.promoguard-tools__job-heading h3,
+.promoguard-tools__job-heading p { margin: 0; }
+
+.promoguard-tools__health p,
+.promoguard-tools__job-heading p { color: var(--promoguard-muted); margin-top: 4px; }
+
+.promoguard-tools__fieldset {
+	border: 1px solid var(--promoguard-border);
+	margin: 16px 0;
+	padding: 16px;
+}
+
+.promoguard-tools__fieldset legend { font-weight: 600; padding: 0 4px; }
+.promoguard-tools__checkbox { align-items: flex-start; display: flex; gap: 10px; }
+.promoguard-tools__checkbox input { margin-top: 3px; }
+.promoguard-tools__checkbox small { color: var(--promoguard-muted); display: block; margin-top: 4px; }
+.promoguard-tools__form-footer,
+.promoguard-tools__actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
+.promoguard-tools__form-footer .promoguard-workspace__status { margin: 0; }
+
+.promoguard-tools__start-form {
+	align-items: end;
+	display: grid;
+	gap: 16px;
+	grid-template-columns: minmax(260px, 2fr) minmax(120px, 1fr) auto;
+	margin: 20px 0;
+}
+
+.promoguard-tools__start-form input { width: 100%; }
+.promoguard-tools__start-action { padding-bottom: 1px; }
+.promoguard-tools__metrics { margin: 16px 0; }
+.promoguard-tools__actions { border-top: 1px solid var(--promoguard-border); padding-top: 16px; }
+.promoguard-tools__errors { margin-top: 20px; }
+.promoguard-status--queued,
+.promoguard-status--running { background: #eef5ff; color: #135e96; }
+.promoguard-status--paused { background: #fcf9e8; color: #6e5800; }
+.promoguard-status--completed { background: #edfaef; color: #116329; }
+.promoguard-status--failed { background: #fcf0f1; color: #8a2424; }
+
+@media (max-width: 782px) {
+	.promoguard-tools__start-form { grid-template-columns: 1fr; }
+	.promoguard-tools__start-action .button { min-height: 44px; width: 100%; }
+}
+
+@media (max-width: 600px) {
+	.promoguard-tools__health,
+	.promoguard-tools__job-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+}

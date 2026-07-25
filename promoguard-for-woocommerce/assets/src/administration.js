@@ -32,6 +32,14 @@
 			description: __( 'Trace reservation and redemption outcomes from the PromoGuard usage ledger.', 'promoguard-for-woocommerce' ),
 			title: __( 'Usage history', 'promoguard-for-woocommerce' ),
 		},
+		settings: {
+			description: __( 'Manage explicit data-removal consent and review storage compatibility.', 'promoguard-for-woocommerce' ),
+			title: __( 'Settings', 'promoguard-for-woocommerce' ),
+		},
+		tools: {
+			description: __( 'Operate bounded historical indexing jobs and inspect their progress.', 'promoguard-for-woocommerce' ),
+			title: __( 'Tools', 'promoguard-for-woocommerce' ),
+		},
 	};
 	const campaignPanels = [
 		byId( 'promoguard-create-panel' ),
@@ -99,6 +107,7 @@
 			window.history.replaceState( null, '', `#${ view }` );
 		}
 		loadView( view );
+		root.dispatchEvent( new CustomEvent( 'promoguard:view-change', { detail: { view } } ) );
 	}
 
 	function loadView( view ) {

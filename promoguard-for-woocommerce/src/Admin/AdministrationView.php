@@ -13,7 +13,9 @@ use PromoGuard\Support\Capabilities;
 final class AdministrationView {
 	/** Render the administration navigation and report panels. */
 	public static function render(): void {
-		$can_view_reports = current_user_can( Capabilities::VIEW_REPORTS );
+		$can_view_reports    = current_user_can( Capabilities::VIEW_REPORTS );
+		$can_manage_settings = current_user_can( Capabilities::MANAGE_SETTINGS );
+		$can_run_tools       = current_user_can( Capabilities::RUN_TOOLS );
 		?>
 		<nav class="promoguard-workspace__nav" aria-label="<?php esc_attr_e( 'PromoGuard sections', 'promoguard-for-woocommerce' ); ?>">
 			<?php if ( $can_view_reports ) : ?>
@@ -24,16 +26,22 @@ final class AdministrationView {
 				<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="usages"><?php esc_html_e( 'Usage history', 'promoguard-for-woocommerce' ); ?></button>
 				<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="decisions"><?php esc_html_e( 'Decisions', 'promoguard-for-woocommerce' ); ?></button>
 			<?php endif; ?>
+			<?php if ( $can_manage_settings ) : ?>
+				<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="settings"><?php esc_html_e( 'Settings', 'promoguard-for-woocommerce' ); ?></button>
+			<?php endif; ?>
+			<?php if ( $can_run_tools ) : ?>
+				<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="tools"><?php esc_html_e( 'Tools', 'promoguard-for-woocommerce' ); ?></button>
+			<?php endif; ?>
 		</nav>
 		<?php
 
-		if ( ! $can_view_reports ) {
-			return;
+		if ( $can_view_reports ) {
+			self::render_dashboard();
+			self::render_usage_history();
+			self::render_decisions();
 		}
 
-		self::render_dashboard();
-		self::render_usage_history();
-		self::render_decisions();
+		AdministrationToolsView::render( $can_manage_settings, $can_run_tools );
 	}
 
 	/** Render the lightweight operational dashboard. */
