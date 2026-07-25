@@ -20,6 +20,7 @@ final class AdministrationView {
 		<nav class="promoguard-workspace__nav" aria-label="<?php esc_attr_e( 'PromoGuard sections', 'promoguard-for-woocommerce' ); ?>">
 			<?php if ( $can_view_reports ) : ?>
 				<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="dashboard"><?php esc_html_e( 'Dashboard', 'promoguard-for-woocommerce' ); ?></button>
+				<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="analytics"><?php esc_html_e( 'Analytics', 'promoguard-for-woocommerce' ); ?></button>
 			<?php endif; ?>
 			<button class="promoguard-workspace__nav-item" type="button" data-promoguard-view="campaigns"><?php esc_html_e( 'Campaigns', 'promoguard-for-woocommerce' ); ?></button>
 			<?php if ( $can_view_reports ) : ?>
@@ -37,6 +38,7 @@ final class AdministrationView {
 
 		if ( $can_view_reports ) {
 			self::render_dashboard();
+			AnalyticsView::render();
 			self::render_usage_history();
 			self::render_decisions();
 		}

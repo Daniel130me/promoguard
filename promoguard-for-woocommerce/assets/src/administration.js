@@ -16,6 +16,10 @@
 		usages: { confirmedPage: 1, loaded: false, loading: false, page: 1, pages: 1, perPage: 20 },
 	};
 	const viewCopy = {
+		analytics: {
+			description: __( 'Measure campaign activity with bounded, currency-safe reports and explicit filters.', 'promoguard-for-woocommerce' ),
+			title: __( 'Analytics', 'promoguard-for-woocommerce' ),
+		},
 		campaigns: {
 			description: __( 'Organize native WooCommerce coupons without changing coupon ownership or order history.', 'promoguard-for-woocommerce' ),
 			title: __( 'Campaigns', 'promoguard-for-woocommerce' ),
