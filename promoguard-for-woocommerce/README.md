@@ -24,3 +24,5 @@ npm run env:start
 
 Run PHP checks with `composer check` and JavaScript checks with `npm run check`.
 See [docs/TESTING.md](docs/TESTING.md) before running integration tests.
+See [docs/ADMINISTRATION.md](docs/ADMINISTRATION.md) for roles, reports,
+settings, and historical-indexing operations.

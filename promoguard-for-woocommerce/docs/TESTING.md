@@ -47,7 +47,7 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 160 unit tests with 421 assertions. `npm run check` passes JavaScript syntax
+and 170 unit tests with 455 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
 Phase 8 unit and static coverage includes shared checkout/admin reservation,
@@ -62,7 +62,11 @@ The integration smoke test passes on WordPress 7.0.2, WooCommerce 10.9.4, and PH
 role capabilities, anonymous REST denial, campaign and coupon creation, atomic
 assignment and explicit reassignment, legacy empty-settings compatibility,
 assignment listing, archive immutability, safe Draft deletion, and preservation
-of the native WooCommerce coupon. The existing XAMPP database is never used.
+of the native WooCommerce coupon. Phase 9 coverage also verifies anonymous
+administration denial, Shop Manager report/tool access without settings access,
+bounded history pagination, dashboard and storage-health responses, safe
+settings persistence, and indexing input limits. The existing XAMPP database is
+never used.
 
 The Phase 7 lifecycle smoke test also passes on the pinned environment. It
 verifies partial refunds retain usage, a cumulative full refund restores it
@@ -79,3 +83,9 @@ The campaign administration browser workflow is also verified at desktop and a
 375 x 812 viewport. It covers lifecycle mutations, lazy assignment loading,
 keyboard coupon search, attach/detach metadata, archived read-only controls, and
 a clean console after reload.
+
+Phase 9 browser verification additionally covers capability-aware workspace
+navigation, lazy dashboard/history/settings/tool loading, responsive report
+tables, filter and pagination states, uninstall-consent messaging, indexing
+state actions, visible keyboard focus, and a clean console. Run this check after
+Docker is available and the disposable WordPress environment has started.

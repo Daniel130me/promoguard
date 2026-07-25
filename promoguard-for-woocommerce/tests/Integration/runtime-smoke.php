@@ -96,11 +96,102 @@ promoguard_smoke_assert(
 	'Shop Manager must not manage PromoGuard settings.'
 );
 
+$shop_manager_user_id = wp_insert_user(
+	array(
+		'user_login' => 'promoguard_runtime_shop_manager_' . strtolower( wp_generate_password( 8, false, false ) ),
+		'user_pass'  => wp_generate_password( 24, true, true ),
+		'user_email' => 'promoguard-runtime-' . strtolower( wp_generate_password( 8, false, false ) ) . '@example.test',
+		'role'       => 'shop_manager',
+	)
+);
+promoguard_smoke_assert( ! is_wp_error( $shop_manager_user_id ), 'Shop Manager runtime user could not be created.' );
+
 wp_set_current_user( 0 );
 $unauthorized = promoguard_smoke_request( 'GET', '/promoguard/v1/campaigns' );
 promoguard_smoke_assert( 401 === $unauthorized->get_status() || 403 === $unauthorized->get_status(), 'Campaign routes must reject anonymous requests.' );
+foreach (
+	array(
+		'/promoguard/v1/administration/overview',
+		'/promoguard/v1/administration/usages',
+		'/promoguard/v1/administration/decisions',
+		'/promoguard/v1/administration/settings',
+		'/promoguard/v1/administration/indexing',
+	) as $administration_route
+) {
+	$unauthorized = promoguard_smoke_request( 'GET', $administration_route );
+	promoguard_smoke_assert(
+		401 === $unauthorized->get_status() || 403 === $unauthorized->get_status(),
+		"{$administration_route} must reject anonymous requests."
+	);
+}
+
+wp_set_current_user( (int) $shop_manager_user_id );
+promoguard_smoke_expect_status(
+	promoguard_smoke_request( 'GET', '/promoguard/v1/administration/overview' ),
+	200
+);
+promoguard_smoke_expect_status(
+	promoguard_smoke_request( 'GET', '/promoguard/v1/administration/indexing' ),
+	200
+);
+$forbidden_settings = promoguard_smoke_request( 'GET', '/promoguard/v1/administration/settings' );
+promoguard_smoke_assert( 403 === $forbidden_settings->get_status(), 'Shop Manager must not read administrator-only settings.' );
 
 wp_set_current_user( 1 );
+$overview = promoguard_smoke_expect_status(
+	promoguard_smoke_request( 'GET', '/promoguard/v1/administration/overview' ),
+	200
+);
+promoguard_smoke_assert( isset( $overview['campaigns'], $overview['usages'], $overview['totals'] ), 'Administration overview is incomplete.' );
+
+$usage_page = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/administration/usages',
+		array(
+			'page'     => 1,
+			'per_page' => 20,
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 1 === $usage_page['page'] && 20 === $usage_page['per_page'], 'Usage history pagination is unstable.' );
+
+$decision_page = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/administration/decisions',
+		array(
+			'page'     => 1,
+			'per_page' => 20,
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 1 === $decision_page['page'] && 20 === $decision_page['per_page'], 'Decision history pagination is unstable.' );
+
+$settings = promoguard_smoke_expect_status(
+	promoguard_smoke_request( 'GET', '/promoguard/v1/administration/settings' ),
+	200
+);
+promoguard_smoke_assert( array_key_exists( 'storage_engine_supported', $settings ), 'Storage health is absent from settings.' );
+promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'PATCH',
+		'/promoguard/v1/administration/settings',
+		array( 'delete_data_on_uninstall' => false )
+	),
+	200
+);
+promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'POST',
+		'/promoguard/v1/administration/indexing/start',
+		array( 'batch_size' => 101 )
+	),
+	400
+);
+
 $run_id       = strtolower( wp_generate_password( 8, false, false ) );
 $campaign_one = promoguard_smoke_expect_status(
 	promoguard_smoke_request(
