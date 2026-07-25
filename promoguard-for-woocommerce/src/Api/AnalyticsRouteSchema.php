@@ -9,6 +9,8 @@ namespace PromoGuard\Api;
 
 /** Centralizes validated analytics report filters. */
 final class AnalyticsRouteSchema {
+	private const MAX_PAGE_SIZE = 50;
+
 	/**
 	 * Return summary report arguments.
 	 *
@@ -29,6 +31,29 @@ final class AnalyticsRouteSchema {
 				'required' => false,
 				'minimum'  => 1,
 			),
+		);
+	}
+	/**
+	 * Return paginated campaign report arguments.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public static function campaigns(): array {
+		return array_merge(
+			self::summary(),
+			array(
+				'page'     => array(
+					'type'    => 'integer',
+					'default' => 1,
+					'minimum' => 1,
+				),
+				'per_page' => array(
+					'type'    => 'integer',
+					'default' => 20,
+					'minimum' => 1,
+					'maximum' => self::MAX_PAGE_SIZE,
+				),
+			)
 		);
 	}
 }

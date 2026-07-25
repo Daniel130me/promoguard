@@ -15,6 +15,9 @@ use PromoGuard\Analytics\AnalyticsRepository;
 use PromoGuard\Analytics\AnalyticsService;
 use PromoGuard\Analytics\AnalyticsStore;
 use PromoGuard\Analytics\CachedAnalyticsStore;
+use PromoGuard\Analytics\CachedCampaignAnalyticsStore;
+use PromoGuard\Analytics\CampaignAnalyticsRepository;
+use PromoGuard\Analytics\CampaignAnalyticsStore;
 use PromoGuard\Analytics\OrderRevenueCalculator;
 use PromoGuard\Analytics\WooCommerceOrderProvider;
 use PromoGuard\Support\Capabilities;
@@ -32,9 +35,13 @@ final class AnalyticsController {
 	/**
 	 * Configure the analytics read model.
 	 *
-	 * @param AnalyticsStore $store Cached analytics store.
+	 * @param AnalyticsStore         $store     Cached analytics summary store.
+	 * @param CampaignAnalyticsStore $campaigns Cached campaign analytics store.
 	 */
-	public function __construct( private readonly AnalyticsStore $store ) {}
+	public function __construct(
+		private readonly AnalyticsStore $store,
+		private readonly CampaignAnalyticsStore $campaigns
+	) {}
 
 	/** Build the controller for the active WordPress site. */
 	public static function from_wordpress(): self {
@@ -46,7 +53,8 @@ final class AnalyticsController {
 					$repository,
 					new OrderRevenueCalculator( $repository, new WooCommerceOrderProvider() )
 				)
-			)
+			),
+			new CachedCampaignAnalyticsStore( CampaignAnalyticsRepository::from_wordpress() )
 		);
 	}
 
@@ -60,6 +68,16 @@ final class AnalyticsController {
 				'callback'            => array( $this, 'summary' ),
 				'permission_callback' => array( $this, 'can_view_reports' ),
 				'args'                => AnalyticsRouteSchema::summary(),
+			)
+		);
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/analytics/campaigns',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'campaigns' ),
+				'permission_callback' => array( $this, 'can_view_reports' ),
+				'args'                => AnalyticsRouteSchema::campaigns(),
 			)
 		);
 	}
@@ -108,6 +126,36 @@ final class AnalyticsController {
 		}
 	}
 
+	/**
+	 * Return one cached campaign-performance page.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 */
+	public function campaigns( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		try {
+			return new WP_REST_Response(
+				$this->campaigns->campaigns(
+					$this->filter( $request ),
+					(int) $request->get_param( 'page' ),
+					(int) $request->get_param( 'per_page' )
+				)
+			);
+		} catch ( DomainException $exception ) {
+			return new WP_Error(
+				'promoguard_invalid_request',
+				$exception->getMessage(),
+				array( 'status' => 400 )
+			);
+		} catch ( Throwable $exception ) {
+			do_action( 'promoguard_rest_error', $exception );
+
+			return new WP_Error(
+				'promoguard_server_error',
+				__( 'PromoGuard could not complete the request.', 'promoguard-for-woocommerce' ),
+				array( 'status' => 500 )
+			);
+		}
+	}
 	/**
 	 * Build a bounded filter, defaulting to the latest 30 complete UTC days.
 	 *
