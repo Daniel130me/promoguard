@@ -86,13 +86,15 @@ final class CampaignPage {
 		<div class="wrap promoguard-admin" id="<?php echo esc_attr( self::ROOT_ID ); ?>">
 			<header class="promoguard-admin__header">
 				<div>
-					<h1><?php esc_html_e( 'Campaigns', 'promoguard-for-woocommerce' ); ?></h1>
-					<p><?php esc_html_e( 'Organize native WooCommerce coupons without changing coupon ownership or order history.', 'promoguard-for-woocommerce' ); ?></p>
+					<h1 id="promoguard-page-title"><?php esc_html_e( 'Campaigns', 'promoguard-for-woocommerce' ); ?></h1>
+					<p id="promoguard-page-description"><?php esc_html_e( 'Organize native WooCommerce coupons without changing coupon ownership or order history.', 'promoguard-for-woocommerce' ); ?></p>
 				</div>
 				<button class="button button-primary" id="promoguard-create-toggle" type="button" aria-expanded="false" aria-controls="promoguard-create-panel"><?php esc_html_e( 'Add campaign', 'promoguard-for-woocommerce' ); ?></button>
 			</header>
 
 			<div class="notice inline promoguard-admin__notice" id="promoguard-notice" role="status" aria-live="polite" hidden></div>
+
+			<?php AdministrationView::render(); ?>
 
 			<section class="promoguard-admin__panel" id="promoguard-create-panel" aria-labelledby="promoguard-create-title" hidden>
 				<h2 id="promoguard-create-title"><?php esc_html_e( 'Create a Draft campaign', 'promoguard-for-woocommerce' ); ?></h2>
@@ -239,7 +241,7 @@ final class CampaignPage {
 					</form>
 				</div>
 			</section>
-			<section class="promoguard-admin__panel" aria-labelledby="promoguard-list-title">
+			<section class="promoguard-admin__panel" id="promoguard-campaign-list-panel" aria-labelledby="promoguard-list-title">
 				<div class="promoguard-admin__toolbar">
 					<div>
 						<h2 id="promoguard-list-title"><?php esc_html_e( 'All campaigns', 'promoguard-for-woocommerce' ); ?></h2>

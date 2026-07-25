@@ -5,7 +5,7 @@
   "description": "Development tooling and administration assets for PromoGuard.",
   "scripts": {
     "build": "node tools/build-assets.mjs",
-    "lint:js": "node --check assets/src/index.js && node --check tools/build-assets.mjs",
+    "lint:js": "node --check assets/src/index.js && node --check assets/src/administration.js && node --check tools/build-assets.mjs",
     "check": "npm run lint:js && npm run build",
     "env:start": "npx --yes @wordpress/env@10.30.0 start",
     "env:stop": "npx --yes @wordpress/env@10.30.0 stop",

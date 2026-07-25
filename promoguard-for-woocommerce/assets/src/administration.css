@@ -1,0 +1,96 @@
+.promoguard-workspace__nav {
+	border-bottom: 1px solid var(--promoguard-border);
+	display: flex;
+	gap: 4px;
+	margin: 0 0 16px;
+	overflow-x: auto;
+}
+
+.promoguard-workspace__nav-item {
+	background: transparent;
+	border: 0;
+	border-bottom: 3px solid transparent;
+	color: #2c3338;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 600;
+	min-height: 44px;
+	padding: 8px 14px;
+	white-space: nowrap;
+}
+
+.promoguard-workspace__nav-item:hover { color: #135e96; }
+.promoguard-workspace__nav-item.is-active {
+	border-bottom-color: #2271b1;
+	color: #135e96;
+}
+
+.promoguard-workspace__view {
+	background: var(--promoguard-surface);
+	border: 1px solid var(--promoguard-border);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+	margin-bottom: 16px;
+	padding: 20px;
+}
+
+.promoguard-workspace__view h2 { margin-top: 0; }
+.promoguard-workspace__status { color: var(--promoguard-muted); margin: 16px 0; }
+.promoguard-workspace__metrics {
+	display: grid;
+	gap: 12px;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.promoguard-workspace__metric {
+	background: var(--promoguard-soft);
+	border: 1px solid var(--promoguard-border);
+	border-radius: 4px;
+	padding: 16px;
+}
+
+.promoguard-workspace__metric span {
+	color: var(--promoguard-muted);
+	display: block;
+	font-weight: 600;
+}
+
+.promoguard-workspace__metric strong {
+	display: block;
+	font-size: 28px;
+	line-height: 1.2;
+	margin-top: 8px;
+}
+
+.promoguard-workspace__filters {
+	align-items: end;
+	background: var(--promoguard-soft);
+	display: grid;
+	gap: 12px;
+	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+	margin: 20px 0 16px;
+	padding: 16px;
+}
+
+.promoguard-workspace__filters input,
+.promoguard-workspace__filters select { min-height: 36px; width: 100%; }
+.promoguard-workspace__filter-actions { display: flex; gap: 8px; }
+.promoguard-status--pending { background: #eef5ff; color: #135e96; }
+.promoguard-status--consumed { background: #edfaef; color: #116329; }
+.promoguard-status--released { background: var(--promoguard-soft); color: #3c434a; }
+.promoguard-status--restored { background: #fcf9e8; color: #6e5800; }
+
+@media (max-width: 960px) {
+	.promoguard-workspace__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.promoguard-workspace__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+	.promoguard-workspace__metrics,
+	.promoguard-workspace__filters { grid-template-columns: 1fr; }
+	.promoguard-workspace__filter-actions { flex-wrap: wrap; }
+	.promoguard-workspace__filter-actions .button { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.promoguard-workspace__nav-item { transition: border-color 160ms ease-out, color 160ms ease-out; }
+}
