@@ -39,7 +39,8 @@ final class WordPressAdministrationSettingsStore implements AdministrationSettin
 			false
 		);
 
-		if ( ! $updated && get_option( Options::DELETE_DATA_ON_UNINSTALL, false ) !== $delete_data_on_uninstall ) {
+		$current = true === get_option( Options::DELETE_DATA_ON_UNINSTALL, false );
+		if ( ! $updated && $current !== $delete_data_on_uninstall ) {
 			throw new RuntimeException( 'Administration settings could not be saved.' );
 		}
 	}

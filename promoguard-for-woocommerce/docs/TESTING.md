@@ -84,8 +84,9 @@ The campaign administration browser workflow is also verified at desktop and a
 keyboard coupon search, attach/detach metadata, archived read-only controls, and
 a clean console after reload.
 
-Phase 9 browser verification additionally covers capability-aware workspace
-navigation, lazy dashboard/history/settings/tool loading, responsive report
-tables, filter and pagination states, uninstall-consent messaging, indexing
-state actions, visible keyboard focus, and a clean console. Run this check after
-Docker is available and the disposable WordPress environment has started.
+Phase 9 browser verification passes at desktop and a 375 x 812 viewport. It
+covers capability-aware Administrator and Shop Manager navigation, lazy
+dashboard/history/settings/tool loading, responsive report cards without
+horizontal overflow, filter and pagination states, uninstall-consent messaging,
+indexing state actions, visible keyboard focus, locale-aware currency output,
+and a clean console.

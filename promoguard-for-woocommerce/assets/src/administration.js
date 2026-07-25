@@ -12,8 +12,8 @@
 	const byId = ( id ) => document.getElementById( id );
 	const navigation = [ ...root.querySelectorAll( '[data-promoguard-view]' ) ];
 	const reportStates = {
-		decisions: { loaded: false, loading: false, page: 1, pages: 1, perPage: 20 },
-		usages: { loaded: false, loading: false, page: 1, pages: 1, perPage: 20 },
+		decisions: { confirmedPage: 1, loaded: false, loading: false, page: 1, pages: 1, perPage: 20 },
+		usages: { confirmedPage: 1, loaded: false, loading: false, page: 1, pages: 1, perPage: 20 },
 	};
 	const viewCopy = {
 		campaigns: {
@@ -172,6 +172,23 @@
 		} ).format( new Date( value ) );
 	}
 
+	function formatMoney( amount, currency ) {
+		const numericAmount = Number( amount );
+		if ( ! Number.isFinite( numericAmount ) || ! currency ) {
+			return `${ currency || '' } ${ amount ?? '—' }`.trim();
+		}
+
+		try {
+			return new Intl.NumberFormat( undefined, {
+				currency,
+				currencyDisplay: 'code',
+				style: 'currency',
+			} ).format( numericAmount );
+		} catch ( error ) {
+			return `${ currency } ${ amount }`;
+		}
+	}
+
 	function formatIdentity( prefix, value ) {
 		return value ? `${ prefix } #${ new Intl.NumberFormat().format( value ) }` : '—';
 	}
@@ -191,7 +208,7 @@
 				createCell( __( 'Customer', 'promoguard-for-woocommerce' ), formatIdentity( __( 'Customer', 'promoguard-for-woocommerce' ), item.customer_id ), 'promoguard-admin__number' ),
 				createCell( __( 'Coupon', 'promoguard-for-woocommerce' ), item.coupon_code ),
 				stateCell,
-				createCell( __( 'Discount', 'promoguard-for-woocommerce' ), `${ item.currency } ${ item.discount_amount }`, 'promoguard-admin__number' ),
+				createCell( __( 'Discount', 'promoguard-for-woocommerce' ), formatMoney( item.discount_amount, item.currency ), 'promoguard-admin__number' ),
 				createCell( __( 'Recorded', 'promoguard-for-woocommerce' ), formatDate( item.created_at_gmt ) )
 			);
 			fragment.append( row );
@@ -253,6 +270,8 @@
 				renderDecisions( data.items );
 			}
 			state.pages = Math.max( 1, Math.ceil( data.total / data.per_page ) );
+			state.page = data.page;
+			state.confirmedPage = data.page;
 			state.loaded = true;
 			status.textContent = 0 === data.total
 				? __( 'No matching records.', 'promoguard-for-woocommerce' )
@@ -263,6 +282,7 @@
 				state.pages
 			);
 		} catch ( error ) {
+			state.page = state.confirmedPage;
 			status.textContent = error.message;
 		} finally {
 			state.loading = false;

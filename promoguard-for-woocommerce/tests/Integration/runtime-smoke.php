@@ -38,7 +38,8 @@ function promoguard_smoke_assert( bool $condition, string $message ): void {
  * @param array<string,mixed> $body   Optional request body.
  */
 function promoguard_smoke_request( string $method, string $route, array $body = array() ): WP_REST_Response {
-	$request = new WP_REST_Request( $method, $route );
+	$GLOBALS['promoguard_smoke_rest_error'] = null;
+	$request                                = new WP_REST_Request( $method, $route );
 
 	if ( array() !== $body ) {
 		$request->set_body_params( $body );
@@ -55,13 +56,30 @@ function promoguard_smoke_request( string $method, string $route, array $body = 
  * @return mixed Response data.
  */
 function promoguard_smoke_expect_status( WP_REST_Response $response, int $status ): mixed {
+	$rest_error = $GLOBALS['promoguard_smoke_rest_error'] ?? null;
+	$details    = $rest_error instanceof Throwable
+		? get_class( $rest_error ) . ': ' . $rest_error->getMessage()
+		: wp_json_encode( $response->get_data() );
+
 	promoguard_smoke_assert(
 		$status === $response->get_status(),
-		sprintf( 'Expected REST status %d, received %d.', $status, $response->get_status() )
+		sprintf(
+			'Expected REST status %d, received %d: %s',
+			$status,
+			$response->get_status(),
+			$details
+		)
 	);
 
 	return $response->get_data();
 }
+
+add_action(
+	'promoguard_rest_error',
+	static function ( Throwable $exception ): void {
+		$GLOBALS['promoguard_smoke_rest_error'] = $exception;
+	}
+);
 
 global $wpdb;
 
