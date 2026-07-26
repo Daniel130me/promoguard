@@ -8,6 +8,9 @@
  */
 
 use PromoGuard\Activation\Migrator;
+use PromoGuard\Administration\AdministrationStore;
+use PromoGuard\Api\AdministrationController;
+use PromoGuard\Api\AdministrationPresenter;
 use PromoGuard\Customer\CustomerIdentifier;
 use PromoGuard\Customer\IdentifierHasher;
 use PromoGuard\Privacy\RetentionRepository;
@@ -167,6 +170,12 @@ promoguard_smoke_expect_status(
 );
 $forbidden_settings = promoguard_smoke_request( 'GET', '/promoguard/v1/administration/settings' );
 promoguard_smoke_assert( 403 === $forbidden_settings->get_status(), 'Shop Manager must not read administrator-only settings.' );
+$forbidden_settings_update = promoguard_smoke_request(
+	'PATCH',
+	'/promoguard/v1/administration/settings',
+	array( 'delete_data_on_uninstall' => true )
+);
+promoguard_smoke_assert( 403 === $forbidden_settings_update->get_status(), 'Shop Manager must not change privacy settings.' );
 
 wp_set_current_user( 1 );
 $overview = promoguard_smoke_expect_status(
@@ -206,6 +215,11 @@ $settings = promoguard_smoke_expect_status(
 	200
 );
 promoguard_smoke_assert( array_key_exists( 'storage_engine_supported', $settings ), 'Storage health is absent from settings.' );
+$hash_key = get_option( Options::HASH_KEY, '' );
+promoguard_smoke_assert(
+	is_string( $hash_key ) && ! str_contains( (string) wp_json_encode( $settings ), $hash_key ),
+	'Settings API exposed the customer identifier key.'
+);
 promoguard_smoke_expect_status(
 	promoguard_smoke_request(
 		'PATCH',
@@ -223,6 +237,65 @@ promoguard_smoke_expect_status(
 	400
 );
 
+$redacted_controller = new AdministrationController(
+	new class() implements AdministrationStore {
+		/**
+		 * Throw a synthetic persistence failure containing sensitive diagnostics.
+		 *
+		 * @throws RuntimeException Always, for redaction verification.
+		 */
+		public function overview(): array {
+			throw new RuntimeException( 'SQLSTATE fixture-secret' );
+		}
+
+		/**
+		 * Return an unused usage page fixture.
+		 *
+		 * @param int         $page        Requested page.
+		 * @param int         $per_page    Requested page size.
+		 * @param int|null    $campaign_id Optional campaign ID.
+		 * @param int|null    $order_id    Optional order ID.
+		 * @param string|null $status      Optional status.
+		 */
+		public function usages( int $page, int $per_page, ?int $campaign_id, ?int $order_id, ?string $status ): array {
+			unset( $campaign_id, $order_id, $status );
+
+			return array(
+				'items'    => array(),
+				'total'    => 0,
+				'page'     => $page,
+				'per_page' => $per_page,
+			);
+		}
+
+		/**
+		 * Return an unused decision page fixture.
+		 *
+		 * @param int         $page        Requested page.
+		 * @param int         $per_page    Requested page size.
+		 * @param int|null    $campaign_id Optional campaign ID.
+		 * @param int|null    $order_id    Optional order ID.
+		 * @param string|null $reason      Optional reason.
+		 */
+		public function decisions( int $page, int $per_page, ?int $campaign_id, ?int $order_id, ?string $reason ): array {
+			unset( $campaign_id, $order_id, $reason );
+
+			return array(
+				'items'    => array(),
+				'total'    => 0,
+				'page'     => $page,
+				'per_page' => $per_page,
+			);
+		}
+	},
+	new AdministrationPresenter()
+);
+$redacted_error      = $redacted_controller->overview();
+promoguard_smoke_assert( $redacted_error instanceof WP_Error, 'Synthetic server failure did not produce a REST error.' );
+promoguard_smoke_assert(
+	'PromoGuard could not complete the request.' === $redacted_error->get_error_message(),
+	'REST server failure exposed sensitive diagnostics.'
+);
 $run_id       = strtolower( wp_generate_password( 8, false, false ) );
 $campaign_one = promoguard_smoke_expect_status(
 	promoguard_smoke_request(
@@ -245,6 +318,22 @@ $campaign_two = promoguard_smoke_expect_status(
 		)
 	),
 	201
+);
+$xss_campaign = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'POST',
+		'/promoguard/v1/campaigns',
+		array(
+			'name'        => '<img src=x onerror=alert(1)>Security campaign',
+			'slug'        => "security-campaign-{$run_id}",
+			'description' => '<script>alert(1)</script>=cmd',
+		)
+	),
+	201
+);
+promoguard_smoke_assert(
+	! str_contains( $xss_campaign['name'], '<' ) && ! str_contains( $xss_campaign['description'], '<' ),
+	'Campaign mutation retained executable markup.'
 );
 
 $coupon_code = 'promoguard-runtime-' . wp_generate_password( 8, false, false );
@@ -631,6 +720,15 @@ promoguard_smoke_assert(
 	false !== has_action( 'promoguard_cleanup_expired_decisions' ),
 	'Retention worker action is not registered.'
 );
+$injection_filter = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/administration/decisions',
+		array( 'reason' => "' OR 1=1 --" )
+	),
+	200
+);
+promoguard_smoke_assert( 0 === $injection_filter['total'], 'Decision filter input escaped its exact prepared comparison.' );
 $privacy_exporters = apply_filters( 'wp_privacy_personal_data_exporters', array() );
 promoguard_smoke_assert( isset( $privacy_exporters['promoguard']['callback'] ), 'Privacy exporter is not registered.' );
 $privacy_export = call_user_func( $privacy_exporters['promoguard']['callback'], $privacy_email, 1 );
@@ -657,6 +755,10 @@ promoguard_smoke_assert(
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Verifies retained disposable accounting fixtures.
 	4 === (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$usages_table} WHERE customer_id = %d", $analytics_customer_id ) ),
 	'Privacy eraser removed anonymous usage accounting records.'
+);
+promoguard_smoke_expect_status(
+	promoguard_smoke_request( 'DELETE', sprintf( '/promoguard/v1/campaigns/%d', $xss_campaign['id'] ) ),
+	204
 );
 promoguard_smoke_expect_status(
 	promoguard_smoke_request( 'DELETE', sprintf( '/promoguard/v1/campaigns/%d', $campaign_one['id'] ) ),

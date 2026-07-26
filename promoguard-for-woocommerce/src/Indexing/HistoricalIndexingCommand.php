@@ -129,7 +129,8 @@ final class HistoricalIndexingCommand {
 			$job = $operation();
 			$this->output( 'success', $success . ' Job: ' . $job->id );
 		} catch ( Throwable $exception ) {
-			$this->output( 'error', $exception->getMessage() );
+			do_action( 'promoguard_cli_error', $exception );
+			$this->output( 'error', 'PromoGuard could not complete the indexing command.' );
 		}
 	}
 
