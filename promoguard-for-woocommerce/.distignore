@@ -4,7 +4,13 @@
 /node_modules
 /tests
 /tools
-/vendor/bin
+/vendor
+/.distignore
+/.phpunit.cache
+/.playwright-cli
+/.release-tmp
+/dist
+/graphify-out
 /.editorconfig
 /.gitignore
 /composer.json

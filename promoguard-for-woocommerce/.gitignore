@@ -3,5 +3,7 @@
 /.phpunit.cache/
 /.phpunit.result.cache
 /.wp-env/
+/dist/
+/.release-tmp/
 .graphify-out
 /graphify-out/
