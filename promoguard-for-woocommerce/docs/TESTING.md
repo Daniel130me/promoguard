@@ -27,6 +27,7 @@ integration suite.
 ```sh
 composer check
 npm run check
+npm run package
 npm run env:start
 npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/runtime-smoke.php
 npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/lifecycle-smoke.php
@@ -75,6 +76,13 @@ identifier unlinking, anonymous accounting retention, indexed 365-day decision
 cleanup, privacy-setting authorization, HMAC-key and error redaction, stored
 markup sanitization, and exact prepared handling of injection-style filters.
 The existing XAMPP database is never used.
+
+Phase 12 acceptance extracts the production ZIP into a clean disposable
+installation and activates that artifact rather than the source mount. Official
+WordPress Plugin Check reports no errors; its remaining direct-database warnings
+are reviewed, intentional plugin-table operations with focused inline
+justifications. Both smoke suites pass against the packaged autoloader and fresh
+migrations.
 
 The Phase 7 lifecycle smoke test also passes on the pinned environment. It
 verifies partial refunds retain usage, a cumulative full refund restores it

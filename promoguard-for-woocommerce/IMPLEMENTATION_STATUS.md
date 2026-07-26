@@ -2,13 +2,13 @@
 
 ## Current phase
 
-Phase 11: privacy, security, and hardening — implementation and all gates complete.
+Phase 12: release quality and final acceptance - implementation and local gates complete.
 
-PromoGuard now includes the complete foundation, campaign administration,
+PromoGuard now includes the complete private-beta scope: campaign administration,
 identity and eligibility enforcement, checkout reservations and lifecycle,
-refund restoration and reconciliation, historical indexing, full operational
+refund restoration and reconciliation, historical indexing, operational
 administration, currency-safe analytics, WordPress privacy tooling, bounded
-retention, and adversarial security coverage. Phase 12 release quality is next.
+retention, adversarial security coverage, and reproducible release packaging.
 
 ## Completed
 
@@ -117,6 +117,15 @@ retention, and adversarial security coverage. Phase 12 release quality is next.
 - [x] HMAC key and identifier-hash redaction from API and privacy output
 - [x] Negative authorization, stored-markup, error-redaction, and injection-style runtime tests
 
+### Release quality and acceptance
+
+- [x] Reproducible production ZIP with an authoritative Composer autoloader
+- [x] Required/forbidden artifact-tree verification and SHA-256 output
+- [x] Composer dependency metadata and readable administration source disclosure
+- [x] WordPress Plugin Check validation against the installed packaged artifact
+- [x] Clean-database artifact activation, migration, runtime, and lifecycle acceptance
+- [x] Release checklist, changelog, WordPress readme, and compatibility handoff
+
 ## Verification
 
 - composer check: passed
@@ -127,6 +136,11 @@ retention, and adversarial security coverage. Phase 12 release quality is next.
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: d8d957d228d2
+- npm run package: passed
+  - Production dependencies only; Composer classmap authoritative
+  - Plugin Check: 0 errors; reviewed direct plugin-table query warnings
+  - Packaged artifact activated on a clean disposable database
+  - Runtime and lifecycle smoke suites passed against the artifact
 - Docker daemon: available, server 29.6.1
 - Isolated WordPress/WooCommerce activation and REST smoke test: passed
   - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3
@@ -241,6 +255,7 @@ retention, and adversarial security coverage. Phase 12 release quality is next.
 - Erasure uses one short transaction to lock the canonical customer, delete indexed identifiers, and clear the WordPress user link while preserving anonymous ledger facts.
 - Retention selects at most 250 diagnostics through the created-time index and deletes only that primary-key set; it never scans or deletes usage accounting.
 - Public REST and WP-CLI failures use fixed messages. Runtime negative tests cover capability separation, key/hash redaction, stored markup, and injection-style filters.
+- The release builder uses a fixed project-scoped staging directory, normalized exclusion rules, locked production dependencies, explicit tree assertions, and deterministic asset generation; packaging adds no application query.
 
 ## Compatibility baseline
 
@@ -253,6 +268,8 @@ retention, and adversarial security coverage. Phase 12 release quality is next.
 The pinned default target is runtime verified. The broader declared range remains
 provisional until its full isolated compatibility matrix runs successfully.
 
-## Not implemented
+## Completion
 
-Release-quality packaging, compatibility expansion, and final acceptance remain in Phase 12.
+No implementation phases remain in the private-beta scope. The broader declared
+compatibility range remains gated by the remote matrix, and promotion to production
+remains a release decision after that workflow passes.

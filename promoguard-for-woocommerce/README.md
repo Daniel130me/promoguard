@@ -30,6 +30,8 @@ See [docs/ANALYTICS.md](docs/ANALYTICS.md) for metric definitions, filters,
 currency handling, caching, and campaign breakdowns.
 See [docs/PRIVACY.md](docs/PRIVACY.md) for stored data, WordPress privacy tools,
 retention, authorization boundaries, and security verification.
+See [docs/RELEASE.md](docs/RELEASE.md) for reproducible packaging and artifact
+acceptance.
 
 ## Release build and source disclosure
 
