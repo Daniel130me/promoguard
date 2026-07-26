@@ -61,13 +61,18 @@ final class AnalyticsView {
 			</div>
 			<div class="promoguard-analytics__breakdowns">
 				<section aria-labelledby="promoguard-currency-title">
-					<h3 id="promoguard-currency-title"><?php esc_html_e( 'Discounts by currency', 'promoguard-for-woocommerce' ); ?></h3>
+					<h3 id="promoguard-currency-title"><?php esc_html_e( 'Money by currency', 'promoguard-for-woocommerce' ); ?></h3>
 					<p><?php esc_html_e( 'Currencies remain separate; PromoGuard does not perform conversion.', 'promoguard-for-woocommerce' ); ?></p>
 					<div class="promoguard-admin__table-wrap">
 						<table class="widefat striped" id="promoguard-analytics-currency-table">
 							<thead><tr>
 								<th scope="col"><?php esc_html_e( 'Currency', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Redemptions', 'promoguard-for-woocommerce' ); ?></th>
 								<th scope="col"><?php esc_html_e( 'Consumed discount', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Average discount', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Orders', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Order revenue', 'promoguard-for-woocommerce' ); ?></th>
+								<th scope="col"><?php esc_html_e( 'Average order', 'promoguard-for-woocommerce' ); ?></th>
 								<th scope="col"><?php esc_html_e( 'Restored discount', 'promoguard-for-woocommerce' ); ?></th>
 							</tr></thead>
 							<tbody id="promoguard-analytics-currency-rows"></tbody>
@@ -88,6 +93,30 @@ final class AnalyticsView {
 					</div>
 				</section>
 			</div>
+			<section class="promoguard-analytics__campaigns" aria-labelledby="promoguard-campaign-performance-title">
+				<h3 id="promoguard-campaign-performance-title"><?php esc_html_e( 'Campaign performance', 'promoguard-for-woocommerce' ); ?></h3>
+				<p><?php esc_html_e( 'Activity-ranked campaign facts for the selected period. Currency amounts remain separate.', 'promoguard-for-woocommerce' ); ?></p>
+				<p class="promoguard-workspace__status" id="promoguard-analytics-campaign-status" role="status" aria-live="polite"><?php esc_html_e( 'Campaign performance has not been loaded.', 'promoguard-for-woocommerce' ); ?></p>
+				<div class="promoguard-admin__table-wrap">
+					<table class="widefat striped" id="promoguard-analytics-campaign-table">
+						<thead><tr>
+							<th scope="col"><?php esc_html_e( 'Campaign', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Redemptions', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Customers', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Orders', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Restored', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Denials', 'promoguard-for-woocommerce' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Currency facts', 'promoguard-for-woocommerce' ); ?></th>
+						</tr></thead>
+						<tbody id="promoguard-analytics-campaign-rows"></tbody>
+					</table>
+				</div>
+				<nav class="promoguard-admin__pagination" aria-label="<?php esc_attr_e( 'Campaign performance pages', 'promoguard-for-woocommerce' ); ?>">
+					<button class="button" id="promoguard-analytics-campaign-previous" type="button" disabled><?php esc_html_e( 'Previous', 'promoguard-for-woocommerce' ); ?></button>
+					<span id="promoguard-analytics-campaign-page-status"></span>
+					<button class="button" id="promoguard-analytics-campaign-next" type="button" disabled><?php esc_html_e( 'Next', 'promoguard-for-woocommerce' ); ?></button>
+				</nav>
+			</section>
 		</section>
 		<?php
 	}

@@ -341,19 +341,41 @@ promoguard_smoke_assert(
 	'Analytics customer fixture could not be created.'
 );
 $analytics_customer_id = (int) $wpdb->insert_id;
-$analytics_order_base  = (int) sprintf( '%u', crc32( $run_id ) ) * 10;
+
+/**
+ * Create one real WooCommerce order for HPOS-compatible revenue verification.
+ *
+ * @param string $currency Order currency.
+ * @param string $total    Order total.
+ */
+$create_analytics_order   = static function ( string $currency, string $total ): WC_Order {
+	$order = wc_create_order();
+	if ( ! $order instanceof WC_Order ) {
+		throw new RuntimeException( 'Analytics order fixture could not be created.' );
+	}
+	$order->set_currency( $currency );
+	$order->set_total( $total );
+	$order->set_status( 'completed' );
+	$order->save();
+
+	return $order;
+};
+$analytics_usd_order      = $create_analytics_order( 'USD', '100' );
+$analytics_eur_order      = $create_analytics_order( 'EUR', '50' );
+$analytics_restored_order = $create_analytics_order( 'USD', '70' );
+$analytics_late_order     = $create_analytics_order( 'USD', '20' );
 
 /**
  * Insert one isolated usage fact for analytics verification.
  *
  * @param string $status   Usage status.
- * @param int    $offset   Stable order offset.
+ * @param int    $order_id WooCommerce order ID.
  * @param string $amount   Discount amount.
  * @param string $currency Order currency.
  */
 $insert_analytics_usage = static function (
 	string $status,
-	int $offset,
+	int $order_id,
 	string $amount,
 	string $currency
 ) use (
@@ -362,7 +384,6 @@ $insert_analytics_usage = static function (
 	$campaign_two,
 	$reassigned,
 	$analytics_customer_id,
-	$analytics_order_base,
 	$analytics_time,
 	$coupon,
 	$coupon_code
@@ -377,7 +398,7 @@ $insert_analytics_usage = static function (
 				'campaign_id'     => $campaign_two['id'],
 				'promotion_id'    => $reassigned['id'],
 				'customer_id'     => $analytics_customer_id,
-				'order_id'        => $analytics_order_base + $offset,
+				'order_id'        => $order_id,
 				'coupon_id'       => $coupon['external_id'],
 				'coupon_code'     => $coupon_code,
 				'status'          => $status,
@@ -396,9 +417,9 @@ $insert_analytics_usage = static function (
 	);
 };
 
-$insert_analytics_usage( 'consumed', 1, '10', 'USD' );
-$insert_analytics_usage( 'consumed', 2, '5', 'EUR' );
-$insert_analytics_usage( 'restored', 3, '7', 'USD' );
+$insert_analytics_usage( 'consumed', $analytics_usd_order->get_id(), '10', 'USD' );
+$insert_analytics_usage( 'consumed', $analytics_eur_order->get_id(), '5', 'EUR' );
+$insert_analytics_usage( 'restored', $analytics_restored_order->get_id(), '7', 'USD' );
 
 foreach ( array( 'customer_limit_reached', 'campaign_paused' ) as $reason ) {
 	promoguard_smoke_assert(
@@ -451,8 +472,29 @@ $currency_totals = array_column( $analytics['currencies'], null, 'currency' );
 promoguard_smoke_assert( '5.00000000' === $currency_totals['EUR']['discount_amount'], 'EUR analytics discount is incorrect.' );
 promoguard_smoke_assert( '10.00000000' === $currency_totals['USD']['discount_amount'], 'USD analytics discount is incorrect.' );
 promoguard_smoke_assert( '7.00000000' === $currency_totals['USD']['restored_discount_amount'], 'USD restored discount is incorrect.' );
+promoguard_smoke_assert( '50' === $currency_totals['EUR']['revenue_amount'], 'EUR order revenue is incorrect.' );
+promoguard_smoke_assert( '100' === $currency_totals['USD']['revenue_amount'], 'USD order revenue is incorrect.' );
+promoguard_smoke_assert( '10' === $currency_totals['USD']['average_discount_amount'], 'USD average discount is incorrect.' );
 
-$insert_analytics_usage( 'consumed', 4, '2', 'USD' );
+$campaign_analytics = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/campaigns',
+		array(
+			'starts_at_gmt' => $period_start->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+			'campaign_id'   => $campaign_two['id'],
+			'page'          => 1,
+			'per_page'      => 10,
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 1 === $campaign_analytics['total'], 'Campaign analytics total is incorrect.' );
+promoguard_smoke_assert( 2 === $campaign_analytics['items'][0]['redemptions'], 'Campaign analytics redemptions do not reconcile.' );
+promoguard_smoke_assert( 2 === $campaign_analytics['items'][0]['denials'], 'Campaign analytics denials do not reconcile.' );
+
+$insert_analytics_usage( 'consumed', $analytics_late_order->get_id(), '2', 'USD' );
 $cached_analytics = promoguard_smoke_expect_status(
 	promoguard_smoke_request(
 		'GET',
@@ -466,6 +508,21 @@ $cached_analytics = promoguard_smoke_expect_status(
 	200
 );
 promoguard_smoke_assert( 2 === $cached_analytics['totals']['redemptions'], 'Analytics summary was not served from cache.' );
+$cached_campaign_analytics = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/campaigns',
+		array(
+			'starts_at_gmt' => $period_start->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+			'campaign_id'   => $campaign_two['id'],
+			'page'          => 1,
+			'per_page'      => 10,
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 2 === $cached_campaign_analytics['items'][0]['redemptions'], 'Campaign analytics page was not served from cache.' );
 do_action( 'promoguard_analytics_changed' );
 $invalidated_analytics = promoguard_smoke_expect_status(
 	promoguard_smoke_request(
@@ -480,6 +537,24 @@ $invalidated_analytics = promoguard_smoke_expect_status(
 	200
 );
 promoguard_smoke_assert( 3 === $invalidated_analytics['totals']['redemptions'], 'Analytics cache invalidation did not expose the new usage.' );
+$invalidated_currency_totals = array_column( $invalidated_analytics['currencies'], null, 'currency' );
+promoguard_smoke_assert( '120' === $invalidated_currency_totals['USD']['revenue_amount'], 'Invalidated USD revenue is incorrect.' );
+promoguard_smoke_assert( '60' === $invalidated_currency_totals['USD']['average_order_amount'], 'Invalidated USD average order is incorrect.' );
+$invalidated_campaign_analytics = promoguard_smoke_expect_status(
+	promoguard_smoke_request(
+		'GET',
+		'/promoguard/v1/analytics/campaigns',
+		array(
+			'starts_at_gmt' => $period_start->format( DATE_ATOM ),
+			'ends_at_gmt'   => $period_end->format( DATE_ATOM ),
+			'campaign_id'   => $campaign_two['id'],
+			'page'          => 1,
+			'per_page'      => 10,
+		)
+	),
+	200
+);
+promoguard_smoke_assert( 3 === $invalidated_campaign_analytics['items'][0]['redemptions'], 'Campaign analytics invalidation did not expose the new usage.' );
 
 promoguard_smoke_expect_status(
 	promoguard_smoke_request(
