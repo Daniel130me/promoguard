@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    defaults:
+      run:
+        working-directory: promoguard-for-woocommerce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Run PHP checks
+        run: composer check
+
+  assets:
+    name: Build release archive
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: promoguard-for-woocommerce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: promoguard-for-woocommerce/package-lock.json
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Build production archive
+        run: npm run package
+      - name: Upload production archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: promoguard-for-woocommerce
+          path: promoguard-for-woocommerce/dist/*.zip
+          if-no-files-found: error
+
+  runtime:
+    name: Runtime ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: minimum / legacy orders
+            wordpress: 6.9.5
+            woocommerce: 10.8.1
+            php: '8.1'
+            hpos: 'no'
+          - name: minimum / HPOS
+            wordpress: 6.9.5
+            woocommerce: 10.8.1
+            php: '8.1'
+            hpos: 'yes'
+          - name: maximum / legacy orders
+            wordpress: 7.0.2
+            woocommerce: 10.9.4
+            php: '8.4'
+            hpos: 'no'
+          - name: maximum / HPOS
+            wordpress: 7.0.2
+            woocommerce: 10.9.4
+            php: '8.4'
+            hpos: 'yes'
+    defaults:
+      run:
+        working-directory: promoguard-for-woocommerce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: promoguard-for-woocommerce/package-lock.json
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Create isolated compatibility configuration
+        env:
+          WORDPRESS_VERSION: ${{ matrix.wordpress }}
+          WOOCOMMERCE_VERSION: ${{ matrix.woocommerce }}
+          PHP_VERSION: ${{ matrix.php }}
+        run: |
+          node -e "const fs=require('node:fs'); fs.writeFileSync('.wp-env.override.json', JSON.stringify({core:'WordPress/WordPress#'+process.env.WORDPRESS_VERSION,phpVersion:process.env.PHP_VERSION,plugins:['.','https://downloads.wordpress.org/plugin/woocommerce.'+process.env.WOOCOMMERCE_VERSION+'.zip'],config:{WP_DEBUG:true,WP_DEBUG_LOG:true,SCRIPT_DEBUG:true}},null,2)+'\n')"
+      - name: Start disposable WordPress
+        run: npx --yes @wordpress/env@10.30.0 start
+      - name: Select WooCommerce order storage
+        run: npx --yes @wordpress/env@10.30.0 run cli wp option update woocommerce_custom_orders_table_enabled ${{ matrix.hpos }}
+      - name: Verify compatibility target
+        run: >-
+          npx --yes @wordpress/env@10.30.0 run cli wp eval
+          "if ('${{ matrix.wordpress }}' !== get_bloginfo('version') ||
+          '${{ matrix.woocommerce }}' !== WC_VERSION ||
+          '${{ matrix.php }}' !== PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION ||
+          '${{ matrix.hpos }}' !== (\Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled() ? 'yes' : 'no')) {
+          WP_CLI::error('Compatibility target mismatch.'); }"
+      - name: Run runtime smoke suite
+        run: npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/runtime-smoke.php
+      - name: Run lifecycle smoke suite
+        run: npx --yes @wordpress/env@10.30.0 run cli wp eval-file wp-content/plugins/promoguard-for-woocommerce/tests/Integration/lifecycle-smoke.php
+      - name: Stop disposable WordPress
+        if: always()
+        run: npx --yes @wordpress/env@10.30.0 stop

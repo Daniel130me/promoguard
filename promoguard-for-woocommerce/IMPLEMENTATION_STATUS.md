@@ -141,6 +141,9 @@ retention, adversarial security coverage, and reproducible release packaging.
   - Plugin Check: 0 errors; reviewed direct plugin-table query warnings
   - Packaged artifact activated on a clean disposable database
   - Runtime and lifecycle smoke suites passed against the artifact
+  - Repository-root compatibility workflow covers PHP 8.1-8.4 and four
+    HPOS/legacy runtime corners
+  - Runtime jobs assert the active WordPress, WooCommerce, PHP, and storage targets
 - Docker daemon: available, server 29.6.1
 - Isolated WordPress/WooCommerce activation and REST smoke test: passed
   - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3
@@ -265,11 +268,12 @@ retention, adversarial security coverage, and reproducible release packaging.
 | WooCommerce | 10.8-10.9 | 10.9.4 |
 | PHP | 8.1-8.4 | 8.3 |
 
-The pinned default target is runtime verified. The broader declared range remains
-provisional until its full isolated compatibility matrix runs successfully.
+The pinned default target is runtime verified. The remaining declared range stays
+provisional until the repository-root remote matrix runs successfully.
 
 ## Completion
 
 No implementation phases remain in the private-beta scope. The broader declared
 compatibility range remains gated by the remote matrix, and promotion to production
-remains a release decision after that workflow passes.
+remains a release decision after that workflow passes. This checkout has no Git
+remote configured, so the workflow cannot be dispatched from here yet.

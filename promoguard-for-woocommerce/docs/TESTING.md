@@ -41,9 +41,10 @@ On Windows PowerShell with script execution disabled, replace `npm` with
 
 The initial verified target is WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3.
 The declared range is WordPress 6.9-7.0, WooCommerce 10.8-10.9, and PHP 8.1-8.4.
-The full HPOS/legacy and Classic/Block Checkout matrix is added alongside the
-integration harness; no unsupported combination is inferred from a passing
-lint-only job.
+The repository-root CI workflow runs PHP 8.1-8.4 static checks and four runtime
+corners: minimum and maximum WordPress/WooCommerce/PHP combinations with both
+HPOS and legacy order storage. No unsupported combination is inferred from a
+passing lint-only job.
 
 ## Runtime verification
 
@@ -83,6 +84,10 @@ WordPress Plugin Check reports no errors; its remaining direct-database warnings
 are reviewed, intentional plugin-table operations with focused inline
 justifications. Both smoke suites pass against the packaged autoloader and fresh
 migrations.
+
+The remote runtime jobs assert the active WordPress, WooCommerce, PHP, and
+order-storage targets before running either suite. All corners must pass before
+promotion.
 
 The Phase 7 lifecycle smoke test also passes on the pinned environment. It
 verifies partial refunds retain usage, a cumulative full refund restores it
