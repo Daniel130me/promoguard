@@ -2,13 +2,13 @@
 
 ## Current phase
 
-Phase 10: analytics — implementation, reconciliation, runtime, and browser gates complete.
+Phase 11: privacy, security, and hardening — implementation and all gates complete.
 
 PromoGuard now includes the complete foundation, campaign administration,
 identity and eligibility enforcement, checkout reservations and lifecycle,
 refund restoration and reconciliation, historical indexing, full operational
-administration, and currency-safe analytics. Phase 11 privacy, security, and
-hardening is next.
+administration, currency-safe analytics, WordPress privacy tooling, bounded
+retention, and adversarial security coverage. Phase 12 release quality is next.
 
 ## Completed
 
@@ -104,13 +104,26 @@ hardening is next.
 - [x] Versioned five-minute caches shared across summaries and campaign pages
 - [x] Mutation-driven invalidation for lifecycle, refunds, and historical imports
 - [x] Desktop and mobile analytics tables with live loading and result states
+
+### Privacy, security, and hardening
+
+- [x] WordPress personal-data exporter with bounded campaign, usage, and decision pages
+- [x] Atomic identifier erasure and WordPress-user unlinking
+- [x] Anonymous usage and aggregate preservation for accounting and lifetime enforcement
+- [x] Suggested WordPress Privacy Policy Guide content
+- [x] Indexed 365-day eligibility-decision retention capped at 250 rows per daily run
+- [x] Action Scheduler retention registration and idempotent scheduling safeguards
+- [x] Fixed public REST and WP-CLI errors without raw exception disclosure
+- [x] HMAC key and identifier-hash redaction from API and privacy output
+- [x] Negative authorization, stored-markup, error-redaction, and injection-style runtime tests
+
 ## Verification
 
 - composer check: passed
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 178 tests, 482 assertions
+  - PHPUnit: 182 tests, 500 assertions
 - npm run check: passed
   - JavaScript syntax: passed
   - Generated asset version: d8d957d228d2
@@ -125,6 +138,9 @@ hardening is next.
   - Real EUR/USD WooCommerce orders reconciled revenue and averages through the public batch factory
   - Summary and paginated campaign caches remained stable before invalidation and refreshed afterward
   - Deleted historical order IDs were skipped without failing the report
+  - Personal-data export omitted hashes and keys; erasure unlinked identifiers while retaining usage accounting
+  - The 365-day retention worker deleted only the expired diagnostic fixture and preserved current decisions
+  - Settings read/write authorization, stored-markup sanitization, generic error redaction, and injection-style filters passed
   - The existing XAMPP WordPress database was not used
 - Isolated Phase 7 lifecycle smoke scenario: passed
   - Covers admin/REST consumption and denial, idempotent reservations/status
@@ -221,6 +237,11 @@ hardening is next.
 - Campaign analytics caps pages at 50 and attaches all visible currency facts in one aggregate query instead of querying per campaign.
 - Both report shapes are revalidated at the transient boundary and share mutation-version invalidation without tracking unbounded cache keys.
 - The analytics UI loads only when opened, builds rows in document fragments, inserts API values with textContent, and retains visible labels and live regions on mobile.
+- Privacy export resolves indexed user or hashed-email identities and issues three capped page queries rather than loading an unbounded customer history.
+- Erasure uses one short transaction to lock the canonical customer, delete indexed identifiers, and clear the WordPress user link while preserving anonymous ledger facts.
+- Retention selects at most 250 diagnostics through the created-time index and deletes only that primary-key set; it never scans or deletes usage accounting.
+- Public REST and WP-CLI failures use fixed messages. Runtime negative tests cover capability separation, key/hash redaction, stored markup, and injection-style filters.
+
 ## Compatibility baseline
 
 | Component | Supported | CI/default target |
@@ -234,4 +255,4 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Privacy/security hardening and release quality remain in Phases 11 and 12.
+Release-quality packaging, compatibility expansion, and final acceptance remain in Phase 12.

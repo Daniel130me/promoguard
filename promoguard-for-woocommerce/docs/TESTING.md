@@ -47,7 +47,7 @@ lint-only job.
 ## Runtime verification
 
 `composer check` passes syntax validation, WordPress coding standards, PHPStan,
-and 178 unit tests with 482 assertions. `npm run check` passes JavaScript syntax
+and 182 unit tests with 500 assertions. `npm run check` passes JavaScript syntax
 and the deterministic asset build.
 
 Phase 8 unit and static coverage includes shared checkout/admin reservation,
@@ -69,6 +69,12 @@ settings persistence, and indexing input limits. Phase 10 coverage adds real
 EUR/USD WooCommerce revenue and averages, distinct order/customer reconciliation,
 paginated campaign breakdowns, shared cache invalidation, and deleted-order
 tolerance. The existing XAMPP database is never used.
+
+Phase 11 runtime coverage verifies WordPress personal-data export and atomic
+identifier unlinking, anonymous accounting retention, indexed 365-day decision
+cleanup, privacy-setting authorization, HMAC-key and error redaction, stored
+markup sanitization, and exact prepared handling of injection-style filters.
+The existing XAMPP database is never used.
 
 The Phase 7 lifecycle smoke test also passes on the pinned environment. It
 verifies partial refunds retain usage, a cumulative full refund restores it

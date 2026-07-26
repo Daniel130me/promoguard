@@ -193,7 +193,7 @@ final class PrivacyService {
 		}
 
 		$content = __(
-			'PromoGuard records promotion campaign activity needed to enforce usage rules and prevent repeated redemption. Records can include an internal customer reference, a non-reversible keyed hash of a user ID or billing email, campaign and coupon details, WooCommerce order references, discount amounts, currencies, eligibility decisions, and event times. PromoGuard does not send this information to an external service and does not collect telemetry. Administrators can export this activity through the WordPress personal-data tools. Erasure removes the WordPress user link and hashed identifiers; anonymous promotion usage, decision, and aggregate records may be retained for accounting, fraud prevention, and rule enforcement.',
+			'PromoGuard records promotion campaign activity needed to enforce usage rules and prevent repeated redemption. Records can include an internal customer reference, a non-reversible keyed hash of a user ID or billing email, campaign and coupon details, WooCommerce order references, discount amounts, currencies, eligibility decisions, and event times. PromoGuard does not send this information to an external service and does not collect telemetry. Administrators can export this activity through the WordPress personal-data tools. Erasure removes the WordPress user link and hashed identifiers. Anonymous promotion usage and aggregate records may be retained for accounting, fraud prevention, and lifetime-rule enforcement; eligibility decisions are retained for 365 days.',
 			'promoguard-for-woocommerce'
 		);
 

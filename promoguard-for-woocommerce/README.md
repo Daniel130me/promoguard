@@ -28,3 +28,5 @@ See [docs/ADMINISTRATION.md](docs/ADMINISTRATION.md) for roles, reports,
 settings, and historical-indexing operations.
 See [docs/ANALYTICS.md](docs/ANALYTICS.md) for metric definitions, filters,
 currency handling, caching, and campaign breakdowns.
+See [docs/PRIVACY.md](docs/PRIVACY.md) for stored data, WordPress privacy tools,
+retention, authorization boundaries, and security verification.
