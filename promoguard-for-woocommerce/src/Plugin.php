@@ -19,6 +19,7 @@ use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Indexing\HistoricalIndexingCommand;
 use PromoGuard\Indexing\WooCommerceHistoricalIndexing;
 use PromoGuard\Privacy\PrivacyService;
+use PromoGuard\Privacy\WooCommerceRetention;
 use PromoGuard\Reconciliation\WooCommerceReconciliation;
 use PromoGuard\Refund\WooCommerceRefundLifecycle;
 use PromoGuard\Reservation\WooCommerceOrderLifecycle;
@@ -60,6 +61,7 @@ final class Plugin {
 		Capabilities::install();
 		CachedAnalyticsStore::register_invalidation();
 		PrivacyService::from_wordpress()->register();
+		WooCommerceRetention::from_wordpress()->register();
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			Installer::maybe_upgrade();
 		}

@@ -10,6 +10,8 @@
 use PromoGuard\Activation\Migrator;
 use PromoGuard\Customer\CustomerIdentifier;
 use PromoGuard\Customer\IdentifierHasher;
+use PromoGuard\Privacy\RetentionRepository;
+use PromoGuard\Privacy\RetentionService;
 use PromoGuard\Support\Capabilities;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\TableNames;
@@ -587,6 +589,47 @@ promoguard_smoke_expect_status(
 		)
 	),
 	400
+);
+$old_decision_time = ( new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) ) )
+	->modify( '-366 days' )
+	->format( 'Y-m-d H:i:s' );
+promoguard_smoke_assert(
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Creates one disposable expired diagnostic fixture.
+	false !== $wpdb->insert(
+		$tables->decisions(),
+		array(
+			'request_id'        => wp_generate_uuid4(),
+			'campaign_id'       => $campaign_two['id'],
+			'promotion_id'      => $reassigned['id'],
+			'customer_id'       => $analytics_customer_id,
+			'coupon_id'         => $coupon['external_id'],
+			'coupon_code'       => $coupon_code,
+			'context'           => 'runtime_smoke',
+			'decision'          => 'denied',
+			'reason'            => 'expired_fixture',
+			'customer_message'  => 'Promotion unavailable.',
+			'admin_explanation' => 'Disposable expired fixture.',
+			'metadata'          => '{}',
+			'created_at_gmt'    => $old_decision_time,
+		)
+	),
+	'Expired decision fixture could not be created.'
+);
+promoguard_smoke_assert(
+	1 === ( new RetentionService( new RetentionRepository( $tables ) ) )->cleanup(
+		new DateTimeImmutable( current_time( 'mysql', true ), new DateTimeZone( 'UTC' ) )
+	),
+	'Retention cleanup did not delete exactly the expired diagnostic.'
+);
+$decisions_table = $tables->decisions();
+promoguard_smoke_assert(
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Verifies current disposable diagnostics remain after retention.
+	2 === (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$decisions_table} WHERE customer_id = %d", $analytics_customer_id ) ),
+	'Retention cleanup removed current decision records.'
+);
+promoguard_smoke_assert(
+	false !== has_action( 'promoguard_cleanup_expired_decisions' ),
+	'Retention worker action is not registered.'
 );
 $privacy_exporters = apply_filters( 'wp_privacy_personal_data_exporters', array() );
 promoguard_smoke_assert( isset( $privacy_exporters['promoguard']['callback'] ), 'Privacy exporter is not registered.' );
