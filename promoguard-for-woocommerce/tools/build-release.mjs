@@ -73,8 +73,6 @@ function runComposerInstall() {
 		cwd: packageDirectory,
 		stdio: 'inherit',
 	} );
-
-	composerFiles.forEach( ( file ) => unlinkSync( join( packageDirectory, file ) ) );
 }
 
 function createArchive() {
@@ -104,6 +102,8 @@ function verifyStagingTree() {
 		'uninstall.php',
 		'readme.txt',
 		'LICENSE',
+		'composer.json',
+		'composer.lock',
 		'vendor/autoload.php',
 		'assets/build/index.js',
 		'assets/build/index.css',
@@ -113,8 +113,6 @@ function verifyStagingTree() {
 		'tests',
 		'tools',
 		'node_modules',
-		'composer.json',
-		'composer.lock',
 		'package.json',
 		'package-lock.json',
 		'.distignore',
