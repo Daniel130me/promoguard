@@ -2,16 +2,13 @@
 
 ## Current phase
 
-Phase 8: historical indexing — implementation and isolated runtime gate complete.
+Phase 10: analytics — implementation, reconciliation, runtime, and browser gates complete.
 
-Identity, deterministic eligibility, Classic/Store API checkout enforcement,
-deduplicated denial logging, and atomic reservation persistence are implemented.
-Order-status changes consume or release pending usages. Cumulative full refunds
-restore eligible consumption exactly once, and bounded reconciliation rebuilds
-customer/campaign aggregates from the usage ledger. Action Scheduler runs both
-expiration and reconciliation without loading unbounded datasets. Resumable
-historical indexing can now reconstruct campaign usage from existing
-WooCommerce orders without scanning order history during checkout.
+PromoGuard now includes the complete foundation, campaign administration,
+identity and eligibility enforcement, checkout reservations and lifecycle,
+refund restoration and reconciliation, historical indexing, full operational
+administration, and currency-safe analytics. Phase 11 privacy, security, and
+hardening is next.
 
 ## Completed
 
@@ -95,16 +92,28 @@ WooCommerce orders without scanning order history during checkout.
 - [x] Responsive table-to-card layout for narrow WordPress admin viewports
 - [x] Pretty and plain-permalink REST URL compatibility
 
+### Full administration and analytics
+
+- [x] Capability-protected operational dashboard, usage history, decisions, settings, and tools
+- [x] Lazy, responsive, keyboard-accessible administration navigation and report views
+- [x] Bounded UTC analytics filters with a 366-day maximum window
+- [x] Redemptions, unique customers, campaign/global order counts, restorations, and denial reasons
+- [x] Currency-separated discount, revenue, and average metrics without conversion
+- [x] HPOS-compatible, 100-order public batch loading with deleted-order tolerance
+- [x] Activity-ranked campaign breakdowns capped at 50 campaigns per page
+- [x] Versioned five-minute caches shared across summaries and campaign pages
+- [x] Mutation-driven invalidation for lifecycle, refunds, and historical imports
+- [x] Desktop and mobile analytics tables with live loading and result states
 ## Verification
 
 - composer check: passed
   - PHP syntax: passed
   - WordPress Coding Standards: passed
   - PHPStan: passed
-  - PHPUnit: 160 tests, 421 assertions
+  - PHPUnit: 178 tests, 482 assertions
 - npm run check: passed
   - JavaScript syntax: passed
-  - Generated asset version: da23eb881114
+  - Generated asset version: d8d957d228d2
 - Docker daemon: available, server 29.6.1
 - Isolated WordPress/WooCommerce activation and REST smoke test: passed
   - WordPress 7.0.2, WooCommerce 10.9.4, and PHP 8.3
@@ -113,6 +122,9 @@ WooCommerce orders without scanning order history during checkout.
   - Capability recovery, anonymous denial, campaign/coupon creation, atomic
     assignment, legacy empty-settings reads, explicit reassignment, archive
     immutability, safe deletion, and native coupon preservation passed
+  - Real EUR/USD WooCommerce orders reconciled revenue and averages through the public batch factory
+  - Summary and paginated campaign caches remained stable before invalidation and refreshed afterward
+  - Deleted historical order IDs were skipped without failing the report
   - The existing XAMPP WordPress database was not used
 - Isolated Phase 7 lifecycle smoke scenario: passed
   - Covers admin/REST consumption and denial, idempotent reservations/status
@@ -136,6 +148,8 @@ WooCommerce orders without scanning order history during checkout.
     coupon preservation, and archived read-only controls verified
   - Plain-permalink REST requests passed and a fresh browser console had 0 errors
   - Responsive campaign and assignment layouts verified at 375 x 812
+  - Analytics revenue, averages, denial reasons, and 10 campaign rows rendered with zero console errors
+  - Expanded analytics tables used labeled mobile rows with no horizontal overflow at 375 x 812
 
 ## Maintainability and performance review
 
@@ -202,6 +216,11 @@ WooCommerce orders without scanning order history during checkout.
   regions, text status labels, and reduced-motion handling keep the UI aligned
   with WordPress and accessible without adding a frontend framework.
 
+- Analytics summary queries use date-leading plugin indexes, preserve distinct customer/order semantics, and bound denial groups.
+- Revenue pages contain at most 100 distinct order IDs and use WooCommerce's public batch factory, preserving HPOS compatibility and avoiding one order query per ID.
+- Campaign analytics caps pages at 50 and attaches all visible currency facts in one aggregate query instead of querying per campaign.
+- Both report shapes are revalidated at the transient boundary and share mutation-version invalidation without tracking unbounded cache keys.
+- The analytics UI loads only when opened, builds rows in document fragments, inserts API values with textContent, and retains visible labels and live regions on mobile.
 ## Compatibility baseline
 
 | Component | Supported | CI/default target |
@@ -215,5 +234,4 @@ provisional until its full isolated compatibility matrix runs successfully.
 
 ## Not implemented
 
-Full administration, analytics, privacy tools, and release hardening belong to
-the remaining phases.
+Privacy/security hardening and release quality remain in Phases 11 and 12.

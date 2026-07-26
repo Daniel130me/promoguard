@@ -26,3 +26,5 @@ Run PHP checks with `composer check` and JavaScript checks with `npm run check`.
 See [docs/TESTING.md](docs/TESTING.md) before running integration tests.
 See [docs/ADMINISTRATION.md](docs/ADMINISTRATION.md) for roles, reports,
 settings, and historical-indexing operations.
+See [docs/ANALYTICS.md](docs/ANALYTICS.md) for metric definitions, filters,
+currency handling, caching, and campaign breakdowns.
