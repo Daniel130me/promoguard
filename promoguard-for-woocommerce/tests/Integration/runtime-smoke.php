@@ -8,6 +8,8 @@
  */
 
 use PromoGuard\Activation\Migrator;
+use PromoGuard\Customer\CustomerIdentifier;
+use PromoGuard\Customer\IdentifierHasher;
 use PromoGuard\Support\Capabilities;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\TableNames;
@@ -341,6 +343,25 @@ promoguard_smoke_assert(
 	'Analytics customer fixture could not be created.'
 );
 $analytics_customer_id = (int) $wpdb->insert_id;
+$privacy_email         = 'promoguard-privacy-runtime@example.test';
+$privacy_hash_key      = get_option( Options::HASH_KEY, '' );
+promoguard_smoke_assert( is_string( $privacy_hash_key ) && '' !== $privacy_hash_key, 'Privacy hash key is unavailable.' );
+$privacy_email_hash = ( new IdentifierHasher( $privacy_hash_key ) )->hash( CustomerIdentifier::TYPE_EMAIL, $privacy_email );
+promoguard_smoke_assert(
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Creates one disposable privacy identifier fixture.
+	false !== $wpdb->insert(
+		$tables->customer_identifiers(),
+		array(
+			'customer_id'       => $analytics_customer_id,
+			'identifier_type'   => CustomerIdentifier::TYPE_EMAIL,
+			'identifier_hash'   => $privacy_email_hash,
+			'is_primary'        => 1,
+			'first_seen_at_gmt' => $analytics_time,
+			'last_seen_at_gmt'  => $analytics_time,
+		)
+	),
+	'Privacy email fixture could not be created.'
+);
 
 /**
  * Create one real WooCommerce order for HPOS-compatible revenue verification.
@@ -566,6 +587,33 @@ promoguard_smoke_expect_status(
 		)
 	),
 	400
+);
+$privacy_exporters = apply_filters( 'wp_privacy_personal_data_exporters', array() );
+promoguard_smoke_assert( isset( $privacy_exporters['promoguard']['callback'] ), 'Privacy exporter is not registered.' );
+$privacy_export = call_user_func( $privacy_exporters['promoguard']['callback'], $privacy_email, 1 );
+promoguard_smoke_assert( true === $privacy_export['done'], 'Privacy export did not finish its bounded page.' );
+promoguard_smoke_assert( count( $privacy_export['data'] ) >= 6, 'Privacy export omitted usage or decision records.' );
+promoguard_smoke_assert(
+	! str_contains( (string) wp_json_encode( $privacy_export ), $privacy_email_hash ),
+	'Privacy export exposed an internal identifier hash.'
+);
+
+$privacy_erasers = apply_filters( 'wp_privacy_personal_data_erasers', array() );
+promoguard_smoke_assert( isset( $privacy_erasers['promoguard']['callback'] ), 'Privacy eraser is not registered.' );
+$privacy_erasure = call_user_func( $privacy_erasers['promoguard']['callback'], $privacy_email, 1 );
+promoguard_smoke_assert( true === $privacy_erasure['items_removed'], 'Privacy eraser did not remove identifiers.' );
+promoguard_smoke_assert( true === $privacy_erasure['items_retained'], 'Privacy eraser did not disclose retained accounting records.' );
+$identifiers_table = $tables->customer_identifiers();
+$usages_table      = $tables->usages();
+promoguard_smoke_assert(
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Verifies disposable privacy fixture anonymization.
+	0 === (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$identifiers_table} WHERE customer_id = %d", $analytics_customer_id ) ),
+	'Privacy eraser left a customer identifier behind.'
+);
+promoguard_smoke_assert(
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Verifies retained disposable accounting fixtures.
+	4 === (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$usages_table} WHERE customer_id = %d", $analytics_customer_id ) ),
+	'Privacy eraser removed anonymous usage accounting records.'
 );
 promoguard_smoke_expect_status(
 	promoguard_smoke_request( 'DELETE', sprintf( '/promoguard/v1/campaigns/%d', $campaign_one['id'] ) ),
