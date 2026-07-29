@@ -7,6 +7,8 @@
 
 namespace PromoGuard\Administration;
 
+use PromoGuard\SignupBonus\SignupBonusRules;
+
 /** Provides the small set of implemented, administrator-only settings. */
 interface AdministrationSettingsStore {
 	/**
@@ -15,15 +17,17 @@ interface AdministrationSettingsStore {
 	 * @return array{
 	 *     delete_data_on_uninstall:bool,
 	 *     storage_engine_supported:bool|null,
-	 *     storage_engine_checked_at_gmt:string|null
+	 *     storage_engine_checked_at_gmt:string|null,
+	 *     signup_bonus:array{customer_event:string,customer_amount:string,vendor_event:string,vendor_amount:string}
 	 * }
 	 */
 	public function current(): array;
 
 	/**
-	 * Persist explicit uninstall-cleanup consent.
+	 * Persist explicit uninstall consent and standalone signup campaign rules.
 	 *
-	 * @param bool $delete_data_on_uninstall Whether uninstall may delete plugin-owned data.
+	 * @param bool             $delete_data_on_uninstall Whether uninstall may delete plugin-owned data.
+	 * @param SignupBonusRules $signup_bonus             Validated signup campaign rules.
 	 */
-	public function save( bool $delete_data_on_uninstall ): void;
+	public function save( bool $delete_data_on_uninstall, SignupBonusRules $signup_bonus ): void;
 }

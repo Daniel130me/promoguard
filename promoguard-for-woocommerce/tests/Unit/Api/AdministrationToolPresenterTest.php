@@ -23,12 +23,19 @@ final class AdministrationToolPresenterTest extends TestCase {
 				'delete_data_on_uninstall'      => false,
 				'storage_engine_supported'      => null,
 				'storage_engine_checked_at_gmt' => '2026-07-24 12:00:00',
+				'signup_bonus'                  => array(
+					'customer_event'  => 'registration',
+					'customer_amount' => '10',
+					'vendor_event'    => 'approval',
+					'vendor_amount'   => '10',
+				),
 			)
 		);
 
 		self::assertFalse( $result['delete_data_on_uninstall'] );
 		self::assertNull( $result['storage_engine_supported'] );
 		self::assertSame( '2026-07-24T12:00:00Z', $result['storage_engine_checked_at_gmt'] );
+		self::assertSame( 'approval', $result['signup_bonus']['vendor_event'] );
 	}
 
 	/** Indexing resources expose bounded progress and ISO GMT dates. */

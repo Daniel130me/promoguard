@@ -41,6 +41,24 @@ Storage engine health is read-only. PromoGuard requires InnoDB for lock-safe
 customer state and usage transitions; repair an unsupported database before
 using protected promotions.
 
+## Signup bonus and store credit
+
+Signup bonuses are standalone store-credit campaigns. They do not create,
+assign, validate, or mutate WooCommerce coupons and do not share the coupon
+campaign API.
+
+Administrators can configure both audiences under **Settings → Signup bonus**:
+
+- Customers default to `10` units of the current WooCommerce store currency on
+  registration. The customer campaign can be disabled and its amount changed.
+- Dokan vendors default to `10` units only after Dokan enables the vendor. The
+  vendor campaign can instead award on registration or be disabled.
+- A zero amount records no transaction. Existing awards are not recalculated
+  when rules change.
+
+Each award uses a source-scoped idempotency reference, so repeated WooCommerce
+or Dokan hooks cannot grant the same audience/event bonus twice. Balances are
+currency scoped; every successful grant appends an immutable ledger row.
 ## Historical indexing
 
 Historical indexing reconstructs PromoGuard usage from existing WooCommerce

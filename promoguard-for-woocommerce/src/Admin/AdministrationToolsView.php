@@ -32,7 +32,7 @@ final class AdministrationToolsView {
 			<div class="promoguard-admin__toolbar">
 				<div>
 					<h2 id="promoguard-settings-title"><?php esc_html_e( 'Settings', 'promoguard-for-woocommerce' ); ?></h2>
-					<p><?php esc_html_e( 'Control data-removal consent and review the latest storage compatibility check.', 'promoguard-for-woocommerce' ); ?></p>
+					<p><?php esc_html_e( 'Configure standalone signup credit, control data-removal consent, and review storage compatibility.', 'promoguard-for-woocommerce' ); ?></p>
 				</div>
 			</div>
 			<div class="promoguard-tools__health" aria-labelledby="promoguard-storage-title">
@@ -43,6 +43,33 @@ final class AdministrationToolsView {
 				<span class="promoguard-status" id="promoguard-storage-status"><?php esc_html_e( 'Unknown', 'promoguard-for-woocommerce' ); ?></span>
 			</div>
 			<form id="promoguard-settings-form">
+				<fieldset class="promoguard-tools__fieldset">
+					<legend><?php esc_html_e( 'Signup bonus', 'promoguard-for-woocommerce' ); ?></legend>
+					<p class="description"><?php esc_html_e( 'These standalone store-credit rules do not use or modify coupon campaigns. Amounts use the current WooCommerce store currency.', 'promoguard-for-woocommerce' ); ?></p>
+					<div class="promoguard-admin__field">
+						<label for="promoguard-customer-bonus-event"><?php esc_html_e( 'Customer award timing', 'promoguard-for-woocommerce' ); ?></label>
+						<select id="promoguard-customer-bonus-event" name="customer_event">
+							<option value="registration"><?php esc_html_e( 'On registration', 'promoguard-for-woocommerce' ); ?></option>
+							<option value="disabled"><?php esc_html_e( 'Disabled', 'promoguard-for-woocommerce' ); ?></option>
+						</select>
+					</div>
+					<div class="promoguard-admin__field">
+						<label for="promoguard-customer-bonus-amount"><?php esc_html_e( 'Customer credit amount', 'promoguard-for-woocommerce' ); ?></label>
+						<input id="promoguard-customer-bonus-amount" name="customer_amount" type="number" min="0" step="any" required>
+					</div>
+					<div class="promoguard-admin__field">
+						<label for="promoguard-vendor-bonus-event"><?php esc_html_e( 'Dokan vendor award timing', 'promoguard-for-woocommerce' ); ?></label>
+						<select id="promoguard-vendor-bonus-event" name="vendor_event">
+							<option value="approval"><?php esc_html_e( 'After approval', 'promoguard-for-woocommerce' ); ?></option>
+							<option value="registration"><?php esc_html_e( 'On registration', 'promoguard-for-woocommerce' ); ?></option>
+							<option value="disabled"><?php esc_html_e( 'Disabled', 'promoguard-for-woocommerce' ); ?></option>
+						</select>
+					</div>
+					<div class="promoguard-admin__field">
+						<label for="promoguard-vendor-bonus-amount"><?php esc_html_e( 'Vendor credit amount', 'promoguard-for-woocommerce' ); ?></label>
+						<input id="promoguard-vendor-bonus-amount" name="vendor_amount" type="number" min="0" step="any" required>
+					</div>
+				</fieldset>
 				<fieldset class="promoguard-tools__fieldset">
 					<legend><?php esc_html_e( 'Uninstall cleanup', 'promoguard-for-woocommerce' ); ?></legend>
 					<label class="promoguard-tools__checkbox" for="promoguard-delete-data">

@@ -13,13 +13,16 @@ use PromoGuard\Indexing\IndexingJob;
 
 /** Covers closed settings and bounded historical-indexing inputs. */
 final class AdministrationToolRouteSchemaTest extends TestCase {
-	/** Settings accept only implemented explicit uninstall consent. */
+	/** Settings accept explicit cleanup consent and a closed signup campaign object. */
 	public function test_settings_require_explicit_cleanup_consent(): void {
 		$schema = AdministrationToolRouteSchema::settings();
 
-		self::assertSame( array( 'delete_data_on_uninstall' ), array_keys( $schema ) );
+		self::assertSame( array( 'delete_data_on_uninstall', 'signup_bonus' ), array_keys( $schema ) );
 		self::assertTrue( $schema['delete_data_on_uninstall']['required'] );
 		self::assertSame( 'boolean', $schema['delete_data_on_uninstall']['type'] );
+		self::assertFalse( $schema['signup_bonus']['additionalProperties'] );
+		self::assertSame( array( 'registration', 'disabled' ), $schema['signup_bonus']['properties']['customer_event']['enum'] );
+		self::assertSame( array( 'registration', 'approval', 'disabled' ), $schema['signup_bonus']['properties']['vendor_event']['enum'] );
 	}
 
 	/** Indexing inputs share domain caps and positive identifier constraints. */
