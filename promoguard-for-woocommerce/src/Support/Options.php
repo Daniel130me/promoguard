@@ -7,6 +7,8 @@
 
 namespace PromoGuard\Support;
 
+use PromoGuard\SignupBonus\SignupBonusRules;
+
 /**
  * Owns the plugin's bounded set of WordPress options.
  */
@@ -20,6 +22,7 @@ final class Options {
 	public const DELETE_DATA_ON_UNINSTALL = 'promoguard_delete_data_on_uninstall';
 	public const HISTORICAL_INDEXING_JOB  = 'promoguard_historical_indexing_job';
 	public const ANALYTICS_CACHE_VERSION  = 'promoguard_analytics_cache_version';
+	public const SIGNUP_BONUS_RULES       = 'promoguard_signup_bonus_rules';
 
 	/**
 	 * Return every option owned by PromoGuard.
@@ -37,6 +40,7 @@ final class Options {
 			self::DELETE_DATA_ON_UNINSTALL,
 			self::HISTORICAL_INDEXING_JOB,
 			self::ANALYTICS_CACHE_VERSION,
+			self::SIGNUP_BONUS_RULES,
 		);
 	}
 
@@ -51,6 +55,7 @@ final class Options {
 		add_option( self::DELETE_DATA_ON_UNINSTALL, false, '', false );
 		add_option( self::HISTORICAL_INDEXING_JOB, array(), '', false );
 		add_option( self::ANALYTICS_CACHE_VERSION, 1, '', false );
+		add_option( self::SIGNUP_BONUS_RULES, SignupBonusRules::defaults()->to_array(), '', false );
 
 		if ( false === get_option( self::HASH_KEY, false ) ) {
 			add_option( self::HASH_KEY, bin2hex( random_bytes( 32 ) ), '', false );

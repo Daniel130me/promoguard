@@ -27,6 +27,7 @@ use PromoGuard\Reservation\WooCommerceUsageExpiration;
 use PromoGuard\Support\Capabilities;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\Requirements;
+use PromoGuard\SignupBonus\SignupBonusHooks;
 
 /**
  * Registers the minimum hooks needed to start PromoGuard safely.
@@ -84,6 +85,7 @@ final class Plugin {
 		WooCommerceReconciliation::from_wordpress()->register();
 		WooCommerceRefundLifecycle::from_wordpress()->register();
 		WooCommerceUsageExpiration::from_wordpress()->register();
+		SignupBonusHooks::from_wordpress()->register();
 
 		if ( is_admin() ) {
 			CampaignPage::register();
