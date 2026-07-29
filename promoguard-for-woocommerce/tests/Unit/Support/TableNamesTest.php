@@ -18,10 +18,12 @@ final class TableNamesTest extends TestCase {
 
 		self::assertSame( 'tenant_7_promoguard_campaigns', $tables->campaigns() );
 		self::assertSame( 'tenant_7_promoguard_usages', $tables->usages() );
-		self::assertCount( 7, array_unique( $tables->all() ) );
+		self::assertSame( 'tenant_7_promoguard_credit_accounts', $tables->credit_accounts() );
+		self::assertSame( 'tenant_7_promoguard_credit_transactions', $tables->credit_transactions() );
+		self::assertCount( 9, array_unique( $tables->all() ) );
 	}
 
-	/** Only state and usage tables are required for transactional locking. */
+	/** Credit accounts and their ledger join checkout state in transactional storage. */
 	public function test_transactional_tables_are_bounded(): void {
 		$tables = new TableNames( 'wp_' );
 
@@ -29,6 +31,8 @@ final class TableNamesTest extends TestCase {
 			array(
 				'wp_promoguard_customer_campaign_state',
 				'wp_promoguard_usages',
+				'wp_promoguard_credit_accounts',
+				'wp_promoguard_credit_transactions',
 			),
 			$tables->transactional()
 		);

@@ -28,6 +28,8 @@ final class Schema {
 		$customer_campaign_state  = $tables->customer_campaign_state();
 		$usages                   = $tables->usages();
 		$decisions                = $tables->decisions();
+		$credit_accounts          = $tables->credit_accounts();
+		$credit_transactions      = $tables->credit_transactions();
 		$engine_and_character_set = 'ENGINE=InnoDB ' . trim( $charset_collate );
 
 		return array(
@@ -170,6 +172,38 @@ final class Schema {
 				KEY customer_created (customer_id, created_at_gmt),
 				KEY decision_reason (decision, reason),
 				KEY order_id (order_id)
+			) {$engine_and_character_set};",
+			"CREATE TABLE {$credit_accounts} (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				wp_user_id bigint(20) unsigned NOT NULL,
+				currency char(3) NOT NULL,
+				balance decimal(26,8) NOT NULL DEFAULT 0,
+				lock_version bigint(20) unsigned NOT NULL DEFAULT 0,
+				created_at_gmt datetime NOT NULL,
+				updated_at_gmt datetime NOT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY user_currency (wp_user_id, currency),
+				KEY updated_at_gmt (updated_at_gmt)
+			) {$engine_and_character_set};",
+			"CREATE TABLE {$credit_transactions} (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				uuid char(36) NOT NULL,
+				account_id bigint(20) unsigned NOT NULL,
+				wp_user_id bigint(20) unsigned NOT NULL,
+				type varchar(32) NOT NULL,
+				source varchar(64) NOT NULL,
+				reference_key varchar(191) NOT NULL,
+				amount decimal(26,8) NOT NULL,
+				balance_after decimal(26,8) NOT NULL,
+				currency char(3) NOT NULL,
+				description varchar(255) NULL,
+				created_at_gmt datetime NOT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY uuid (uuid),
+				UNIQUE KEY source_reference (source, reference_key),
+				KEY user_created (wp_user_id, created_at_gmt),
+				KEY account_created (account_id, created_at_gmt),
+				KEY type_created (type, created_at_gmt)
 			) {$engine_and_character_set};",
 		);
 	}
