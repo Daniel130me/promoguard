@@ -29,6 +29,17 @@ final class AdministrationToolRouteSchema {
 				'type'     => 'boolean',
 				'required' => true,
 			),
+			'store_credit'             => array(
+				'type'                 => 'object',
+				'required'             => true,
+				'additionalProperties' => false,
+				'properties'           => array(
+					'redemption_enabled' => array(
+						'type'     => 'boolean',
+						'required' => true,
+					),
+				),
+			),
 			'signup_bonus'             => array(
 				'type'                 => 'object',
 				'required'             => true,

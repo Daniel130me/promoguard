@@ -44,6 +44,17 @@ final class AdministrationToolsView {
 			</div>
 			<form id="promoguard-settings-form">
 				<fieldset class="promoguard-tools__fieldset">
+					<legend><?php esc_html_e( 'Store credit redemption', 'promoguard-for-woocommerce' ); ?></legend>
+					<label class="promoguard-tools__checkbox" for="promoguard-credit-redemption-enabled">
+						<input id="promoguard-credit-redemption-enabled" name="redemption_enabled" type="checkbox">
+						<span>
+							<strong><?php esc_html_e( 'Allow signed-in customers to apply store credit', 'promoguard-for-woocommerce' ); ?></strong>
+							<small><?php esc_html_e( 'Credit covers merchandise and merchandise tax only. Shipping, guests, and currency mismatches remain ineligible.', 'promoguard-for-woocommerce' ); ?></small>
+						</span>
+					</label>
+					<p class="description"><?php esc_html_e( 'Store-credit redemption is independent of coupon and signup campaigns.', 'promoguard-for-woocommerce' ); ?></p>
+				</fieldset>
+				<fieldset class="promoguard-tools__fieldset">
 					<legend><?php esc_html_e( 'Signup bonus', 'promoguard-for-woocommerce' ); ?></legend>
 					<p class="description"><?php esc_html_e( 'These standalone store-credit rules do not use or modify coupon campaigns. Amounts use the current WooCommerce store currency.', 'promoguard-for-woocommerce' ); ?></p>
 					<div class="promoguard-admin__field">

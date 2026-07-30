@@ -23,6 +23,9 @@ final class AdministrationToolPresenterTest extends TestCase {
 				'delete_data_on_uninstall'      => false,
 				'storage_engine_supported'      => null,
 				'storage_engine_checked_at_gmt' => '2026-07-24 12:00:00',
+				'store_credit'                  => array(
+					'redemption_enabled' => true,
+				),
 				'signup_bonus'                  => array(
 					'customer_event'  => 'registration',
 					'customer_amount' => '10',
@@ -35,6 +38,7 @@ final class AdministrationToolPresenterTest extends TestCase {
 		self::assertFalse( $result['delete_data_on_uninstall'] );
 		self::assertNull( $result['storage_engine_supported'] );
 		self::assertSame( '2026-07-24T12:00:00Z', $result['storage_engine_checked_at_gmt'] );
+		self::assertTrue( $result['store_credit']['redemption_enabled'] );
 		self::assertSame( 'approval', $result['signup_bonus']['vendor_event'] );
 	}
 

@@ -17,9 +17,11 @@ final class AdministrationToolRouteSchemaTest extends TestCase {
 	public function test_settings_require_explicit_cleanup_consent(): void {
 		$schema = AdministrationToolRouteSchema::settings();
 
-		self::assertSame( array( 'delete_data_on_uninstall', 'signup_bonus' ), array_keys( $schema ) );
+		self::assertSame( array( 'delete_data_on_uninstall', 'store_credit', 'signup_bonus' ), array_keys( $schema ) );
 		self::assertTrue( $schema['delete_data_on_uninstall']['required'] );
 		self::assertSame( 'boolean', $schema['delete_data_on_uninstall']['type'] );
+		self::assertFalse( $schema['store_credit']['additionalProperties'] );
+		self::assertSame( 'boolean', $schema['store_credit']['properties']['redemption_enabled']['type'] );
 		self::assertFalse( $schema['signup_bonus']['additionalProperties'] );
 		self::assertSame( array( 'registration', 'disabled' ), $schema['signup_bonus']['properties']['customer_event']['enum'] );
 		self::assertSame( array( 'registration', 'approval', 'disabled' ), $schema['signup_bonus']['properties']['vendor_event']['enum'] );

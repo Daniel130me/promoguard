@@ -11,6 +11,7 @@ use DomainException;
 use InvalidArgumentException;
 use PromoGuard\Administration\AdministrationSettingsStore;
 use PromoGuard\Administration\WordPressAdministrationSettingsStore;
+use PromoGuard\Credit\StoreCreditSettings;
 use PromoGuard\Indexing\WooCommerceHistoricalIndexing;
 use PromoGuard\Support\Capabilities;
 use PromoGuard\SignupBonus\SignupBonusRules;
@@ -131,9 +132,11 @@ final class AdministrationToolController {
 		return $this->respond(
 			function () use ( $request ): WP_REST_Response {
 				$signup_bonus = $request->get_param( 'signup_bonus' );
+				$store_credit = $request->get_param( 'store_credit' );
 				$this->settings->save(
 					(bool) $request->get_param( 'delete_data_on_uninstall' ),
-					SignupBonusRules::from_array( is_array( $signup_bonus ) ? $signup_bonus : array() )
+					SignupBonusRules::from_array( is_array( $signup_bonus ) ? $signup_bonus : array() ),
+					StoreCreditSettings::from_array( is_array( $store_credit ) ? $store_credit : array() )
 				);
 
 				return new WP_REST_Response(

@@ -7,6 +7,7 @@
 
 namespace PromoGuard\Support;
 
+use PromoGuard\Credit\StoreCreditSettings;
 use PromoGuard\SignupBonus\SignupBonusRules;
 
 /**
@@ -23,6 +24,7 @@ final class Options {
 	public const HISTORICAL_INDEXING_JOB  = 'promoguard_historical_indexing_job';
 	public const ANALYTICS_CACHE_VERSION  = 'promoguard_analytics_cache_version';
 	public const SIGNUP_BONUS_RULES       = 'promoguard_signup_bonus_rules';
+	public const STORE_CREDIT_SETTINGS    = 'promoguard_store_credit_settings';
 
 	/**
 	 * Return every option owned by PromoGuard.
@@ -41,6 +43,7 @@ final class Options {
 			self::HISTORICAL_INDEXING_JOB,
 			self::ANALYTICS_CACHE_VERSION,
 			self::SIGNUP_BONUS_RULES,
+			self::STORE_CREDIT_SETTINGS,
 		);
 	}
 
@@ -56,6 +59,7 @@ final class Options {
 		add_option( self::HISTORICAL_INDEXING_JOB, array(), '', false );
 		add_option( self::ANALYTICS_CACHE_VERSION, 1, '', false );
 		add_option( self::SIGNUP_BONUS_RULES, SignupBonusRules::defaults()->to_array(), '', false );
+		add_option( self::STORE_CREDIT_SETTINGS, StoreCreditSettings::defaults()->to_array(), '', false );
 
 		if ( false === get_option( self::HASH_KEY, false ) ) {
 			add_option( self::HASH_KEY, bin2hex( random_bytes( 32 ) ), '', false );

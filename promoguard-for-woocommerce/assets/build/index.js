@@ -1364,6 +1364,7 @@
 
 	function renderSettings( settings ) {
 		byId( 'promoguard-delete-data' ).checked = settings.delete_data_on_uninstall;
+		byId( 'promoguard-credit-redemption-enabled' ).checked = settings.store_credit.redemption_enabled;
 		byId( 'promoguard-customer-bonus-event' ).value = settings.signup_bonus.customer_event;
 		byId( 'promoguard-customer-bonus-amount' ).value = settings.signup_bonus.customer_amount;
 		byId( 'promoguard-vendor-bonus-event' ).value = settings.signup_bonus.vendor_event;
@@ -1535,6 +1536,9 @@
 		try {
 			const settings = await request( '/administration/settings', 'PATCH', {
 				delete_data_on_uninstall: byId( 'promoguard-delete-data' ).checked,
+				store_credit: {
+					redemption_enabled: byId( 'promoguard-credit-redemption-enabled' ).checked,
+				},
 				signup_bonus: {
 					customer_event: byId( 'promoguard-customer-bonus-event' ).value,
 					customer_amount: byId( 'promoguard-customer-bonus-amount' ).value,

@@ -45,7 +45,7 @@ final class StoreCreditCheckout {
 		return new self(
 			CreditRedemptionRepository::from_wordpress(),
 			new CreditCheckoutCalculator(),
-			static fn (): bool => true
+			static fn (): bool => StoreCreditSettings::current()->redemption_enabled
 		);
 	}
 
