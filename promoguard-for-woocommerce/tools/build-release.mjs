@@ -117,6 +117,9 @@ function verifyStagingTree() {
 		'assets/build/index.js',
 		'assets/build/index.css',
 		'assets/build/index.asset.php',
+		'assets/build/store-credit.js',
+		'assets/build/store-credit.css',
+		'assets/build/store-credit.asset.php',
 	];
 	const forbidden = [
 		'tests',

@@ -5,6 +5,9 @@ parameters:
   level: 8
   bootstrapFiles:
     - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+  scanFiles:
+    - tests/StaticAnalysis/woocommerce-blocks.php
+    - tests/StaticAnalysis/woocommerce-cart-schema.php
   paths:
     - src
     - promoguard-for-woocommerce.php

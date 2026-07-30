@@ -14,6 +14,8 @@ use PromoGuard\Api\AdministrationController;
 use PromoGuard\Api\AdministrationToolController;
 use PromoGuard\Api\AnalyticsController;
 use PromoGuard\Api\CampaignController;
+use PromoGuard\Credit\StoreCreditCheckout;
+use PromoGuard\Credit\StoreCreditOrderLifecycle;
 use PromoGuard\Analytics\CachedAnalyticsStore;
 use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Indexing\HistoricalIndexingCommand;
@@ -77,6 +79,8 @@ final class Plugin {
 		add_action( 'rest_api_init', array( AnalyticsController::from_wordpress(), 'register_routes' ) );
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 		WooCommerceCheckout::from_wordpress()->register();
+		StoreCreditCheckout::from_wordpress()->register();
+		StoreCreditOrderLifecycle::from_wordpress()->register();
 		$historical_indexing = WooCommerceHistoricalIndexing::from_wordpress();
 		$historical_indexing->register();
 		add_action( 'rest_api_init', array( AdministrationToolController::from_wordpress( $historical_indexing ), 'register_routes' ) );
