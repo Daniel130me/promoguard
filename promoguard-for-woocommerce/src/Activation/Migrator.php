@@ -14,7 +14,7 @@ use PromoGuard\Support\TableNames;
  * Applies idempotent dbDelta schema migrations.
  */
 final class Migrator {
-	public const CURRENT_VERSION = '1.2.0';
+	public const CURRENT_VERSION = '1.3.0';
 
 	/**
 	 * Apply the current schema only when the stored version is older.

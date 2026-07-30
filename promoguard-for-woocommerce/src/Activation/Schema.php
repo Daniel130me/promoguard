@@ -30,6 +30,7 @@ final class Schema {
 		$decisions                = $tables->decisions();
 		$credit_accounts          = $tables->credit_accounts();
 		$credit_transactions      = $tables->credit_transactions();
+		$credit_reservations      = $tables->credit_reservations();
 		$engine_and_character_set = 'ENGINE=InnoDB ' . trim( $charset_collate );
 
 		return array(
@@ -204,6 +205,29 @@ final class Schema {
 				KEY user_created (wp_user_id, created_at_gmt),
 				KEY account_created (account_id, created_at_gmt),
 				KEY type_created (type, created_at_gmt)
+			) {$engine_and_character_set};",
+			"CREATE TABLE {$credit_reservations} (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				uuid char(36) NOT NULL,
+				account_id bigint(20) unsigned NOT NULL,
+				wp_user_id bigint(20) unsigned NOT NULL,
+				order_id bigint(20) unsigned NOT NULL,
+				currency char(3) NOT NULL,
+				amount decimal(26,8) NOT NULL,
+				status varchar(20) NOT NULL,
+				consumed_amount decimal(26,8) NOT NULL DEFAULT 0,
+				restored_amount decimal(26,8) NOT NULL DEFAULT 0,
+				consumption_transaction_id bigint(20) unsigned NULL,
+				reserved_at_gmt datetime NOT NULL,
+				consumed_at_gmt datetime NULL,
+				released_at_gmt datetime NULL,
+				updated_at_gmt datetime NOT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY uuid (uuid),
+				UNIQUE KEY order_id (order_id),
+				KEY account_status (account_id, status),
+				KEY user_created (wp_user_id, reserved_at_gmt),
+				KEY status_updated (status, updated_at_gmt)
 			) {$engine_and_character_set};",
 		);
 	}

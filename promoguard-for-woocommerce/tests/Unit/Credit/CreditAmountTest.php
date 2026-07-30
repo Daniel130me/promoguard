@@ -39,6 +39,21 @@ final class CreditAmountTest extends TestCase {
 		);
 	}
 
+	/** Exact arithmetic supports reservation and refund caps without floats. */
+	public function test_exact_arithmetic_and_comparison(): void {
+		self::assertSame( '10.25', CreditAmount::add( '7.1', '3.15' ) );
+		self::assertSame( '7.1', CreditAmount::subtract( '10.25', '3.15' ) );
+		self::assertSame( '3.15', CreditAmount::minimum( '10.25', '3.15' ) );
+		self::assertSame( 0, CreditAmount::compare( '1.0', '1' ) );
+		self::assertGreaterThan( 0, CreditAmount::compare( '100000000000000000', '99999999999999999.99999999' ) );
+	}
+
+	/** Subtraction refuses to create a negative payable balance. */
+	public function test_subtraction_rejects_negative_results(): void {
+		$this->expectException( InvalidArgumentException::class );
+		CreditAmount::subtract( '1', '1.01' );
+	}
+
 	/**
 	 * Invalid or unsafe decimal representations are rejected.
 	 *

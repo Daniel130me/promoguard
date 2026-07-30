@@ -20,7 +20,8 @@ final class TableNamesTest extends TestCase {
 		self::assertSame( 'tenant_7_promoguard_usages', $tables->usages() );
 		self::assertSame( 'tenant_7_promoguard_credit_accounts', $tables->credit_accounts() );
 		self::assertSame( 'tenant_7_promoguard_credit_transactions', $tables->credit_transactions() );
-		self::assertCount( 9, array_unique( $tables->all() ) );
+		self::assertSame( 'tenant_7_promoguard_credit_reservations', $tables->credit_reservations() );
+		self::assertCount( 10, array_unique( $tables->all() ) );
 	}
 
 	/** Credit accounts and their ledger join checkout state in transactional storage. */
@@ -33,6 +34,7 @@ final class TableNamesTest extends TestCase {
 				'wp_promoguard_usages',
 				'wp_promoguard_credit_accounts',
 				'wp_promoguard_credit_transactions',
+				'wp_promoguard_credit_reservations',
 			),
 			$tables->transactional()
 		);

@@ -92,6 +92,12 @@ final class TableNames {
 		return $this->prefix . 'credit_transactions';
 	}
 
+	/** Return order-scoped store-credit reservation records. */
+	public function credit_reservations(): string {
+
+		return $this->prefix . 'credit_reservations';
+	}
+
 	/**
 	 * Return every table owned by PromoGuard.
 	 *
@@ -108,6 +114,7 @@ final class TableNames {
 			$this->decisions(),
 			$this->credit_accounts(),
 			$this->credit_transactions(),
+			$this->credit_reservations(),
 		);
 	}
 
@@ -122,6 +129,7 @@ final class TableNames {
 			$this->usages(),
 			$this->credit_accounts(),
 			$this->credit_transactions(),
+			$this->credit_reservations(),
 		);
 	}
 }
