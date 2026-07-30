@@ -120,6 +120,8 @@ function verifyStagingTree() {
 		'assets/build/store-credit.js',
 		'assets/build/store-credit.css',
 		'assets/build/store-credit.asset.php',
+		'templates/myaccount/store-credit.php',
+		'docs/STORE-CREDIT.md',
 	];
 	const forbidden = [
 		'tests',
