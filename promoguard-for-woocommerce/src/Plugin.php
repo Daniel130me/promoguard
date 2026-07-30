@@ -14,6 +14,7 @@ use PromoGuard\Api\AdministrationController;
 use PromoGuard\Api\AdministrationToolController;
 use PromoGuard\Api\AnalyticsController;
 use PromoGuard\Api\CampaignController;
+use PromoGuard\Credit\StoreCreditAccount;
 use PromoGuard\Credit\StoreCreditCheckout;
 use PromoGuard\Credit\StoreCreditOrderLifecycle;
 use PromoGuard\Credit\StoreCreditRefundLifecycle;
@@ -80,6 +81,7 @@ final class Plugin {
 		add_action( 'rest_api_init', array( AnalyticsController::from_wordpress(), 'register_routes' ) );
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 		WooCommerceCheckout::from_wordpress()->register();
+		StoreCreditAccount::from_wordpress()->register();
 		StoreCreditCheckout::from_wordpress()->register();
 		StoreCreditOrderLifecycle::from_wordpress()->register();
 		StoreCreditRefundLifecycle::from_wordpress()->register();
