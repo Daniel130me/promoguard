@@ -1,0 +1,17 @@
+.promoguard-block-credit,
+.promoguard-store-credit-toggle form {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.promoguard-block-credit label,
+.promoguard-store-credit-toggle label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.promoguard-block-credit p[role="alert"] {
+	color: #b32d2e;
+	margin: 0;
+}

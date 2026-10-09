@@ -82,10 +82,19 @@ function createArchive() {
 	}
 
 	if ( process.platform === 'win32' ) {
+		// GNU tar treats the colon in an absolute Windows archive path as a
+		// remote-host separator. Run from the project root with portable,
+		// relative paths so Git for Windows and Windows tar both work.
+		const archiveArgument = normalized( relative( root, archivePath ) );
+		const workArgument = normalized( relative( root, workDirectory ) );
+
 		execFileSync(
 			'tar.exe',
-			[ '-a', '-c', '-f', archivePath, '-C', workDirectory, slug ],
-			{ stdio: 'inherit' }
+			[ '-a', '-c', '-f', archiveArgument, '-C', workArgument, slug ],
+			{
+				cwd: root,
+				stdio: 'inherit',
+			}
 		);
 		return;
 	}
@@ -108,6 +117,11 @@ function verifyStagingTree() {
 		'assets/build/index.js',
 		'assets/build/index.css',
 		'assets/build/index.asset.php',
+		'assets/build/store-credit.js',
+		'assets/build/store-credit.css',
+		'assets/build/store-credit.asset.php',
+		'templates/myaccount/store-credit.php',
+		'docs/STORE-CREDIT.md',
 	];
 	const forbidden = [
 		'tests',

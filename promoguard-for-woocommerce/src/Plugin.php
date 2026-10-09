@@ -14,6 +14,10 @@ use PromoGuard\Api\AdministrationController;
 use PromoGuard\Api\AdministrationToolController;
 use PromoGuard\Api\AnalyticsController;
 use PromoGuard\Api\CampaignController;
+use PromoGuard\Credit\StoreCreditAccount;
+use PromoGuard\Credit\StoreCreditCheckout;
+use PromoGuard\Credit\StoreCreditOrderLifecycle;
+use PromoGuard\Credit\StoreCreditRefundLifecycle;
 use PromoGuard\Analytics\CachedAnalyticsStore;
 use PromoGuard\Checkout\WooCommerceCheckout;
 use PromoGuard\Indexing\HistoricalIndexingCommand;
@@ -27,6 +31,7 @@ use PromoGuard\Reservation\WooCommerceUsageExpiration;
 use PromoGuard\Support\Capabilities;
 use PromoGuard\Support\Options;
 use PromoGuard\Support\Requirements;
+use PromoGuard\SignupBonus\SignupBonusHooks;
 
 /**
  * Registers the minimum hooks needed to start PromoGuard safely.
@@ -76,6 +81,10 @@ final class Plugin {
 		add_action( 'rest_api_init', array( AnalyticsController::from_wordpress(), 'register_routes' ) );
 		add_action( 'rest_api_init', array( CampaignController::from_wordpress(), 'register_routes' ) );
 		WooCommerceCheckout::from_wordpress()->register();
+		StoreCreditAccount::from_wordpress()->register();
+		StoreCreditCheckout::from_wordpress()->register();
+		StoreCreditOrderLifecycle::from_wordpress()->register();
+		StoreCreditRefundLifecycle::from_wordpress()->register();
 		$historical_indexing = WooCommerceHistoricalIndexing::from_wordpress();
 		$historical_indexing->register();
 		add_action( 'rest_api_init', array( AdministrationToolController::from_wordpress( $historical_indexing ), 'register_routes' ) );
@@ -84,6 +93,7 @@ final class Plugin {
 		WooCommerceReconciliation::from_wordpress()->register();
 		WooCommerceRefundLifecycle::from_wordpress()->register();
 		WooCommerceUsageExpiration::from_wordpress()->register();
+		SignupBonusHooks::from_wordpress()->register();
 
 		if ( is_admin() ) {
 			CampaignPage::register();

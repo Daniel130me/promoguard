@@ -11,8 +11,10 @@ use DomainException;
 use InvalidArgumentException;
 use PromoGuard\Administration\AdministrationSettingsStore;
 use PromoGuard\Administration\WordPressAdministrationSettingsStore;
+use PromoGuard\Credit\StoreCreditSettings;
 use PromoGuard\Indexing\WooCommerceHistoricalIndexing;
 use PromoGuard\Support\Capabilities;
+use PromoGuard\SignupBonus\SignupBonusRules;
 use Throwable;
 use WP_Error;
 use WP_REST_Request;
@@ -122,14 +124,20 @@ final class AdministrationToolController {
 	}
 
 	/**
-	 * Save explicit uninstall-cleanup consent.
+	 * Save explicit uninstall consent and standalone signup campaign rules.
 	 *
 	 * @param WP_REST_Request $request REST request.
 	 */
 	public function update_settings( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		return $this->respond(
 			function () use ( $request ): WP_REST_Response {
-				$this->settings->save( (bool) $request->get_param( 'delete_data_on_uninstall' ) );
+				$signup_bonus = $request->get_param( 'signup_bonus' );
+				$store_credit = $request->get_param( 'store_credit' );
+				$this->settings->save(
+					(bool) $request->get_param( 'delete_data_on_uninstall' ),
+					SignupBonusRules::from_array( is_array( $signup_bonus ) ? $signup_bonus : array() ),
+					StoreCreditSettings::from_array( is_array( $store_credit ) ? $store_credit : array() )
+				);
 
 				return new WP_REST_Response(
 					$this->presenter->settings( $this->settings->current() )

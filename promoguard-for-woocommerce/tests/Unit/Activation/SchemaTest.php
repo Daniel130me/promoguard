@@ -25,12 +25,12 @@ final class SchemaTest extends TestCase {
 		$statements       = ( new Schema() )->statements( new TableNames( 'wp_' ), 'DEFAULT CHARACTER SET utf8mb4' );
 		$this->schema_sql = implode( "\n", $statements );
 
-		self::assertCount( 7, $statements );
+		self::assertCount( 10, $statements );
 	}
 
 	/** Every table is explicitly created with the required transactional engine. */
 	public function test_tables_are_created_with_innodb(): void {
-		self::assertSame( 7, substr_count( $this->schema_sql, 'ENGINE=InnoDB' ) );
+		self::assertSame( 10, substr_count( $this->schema_sql, 'ENGINE=InnoDB' ) );
 		self::assertStringNotContainsString( 'FOREIGN KEY', $this->schema_sql );
 	}
 
@@ -60,5 +60,16 @@ final class SchemaTest extends TestCase {
 		foreach ( array( 'reserved_at_gmt', 'consumed_at_gmt', 'released_at_gmt', 'restored_at_gmt' ) as $column ) {
 			self::assertStringContainsString( $column . ' datetime NULL', $this->schema_sql );
 		}
+	}
+
+	/** Store-credit balance updates and idempotent grants have bounded indexes. */
+	public function test_store_credit_indexes_are_present(): void {
+		self::assertStringContainsString( 'UNIQUE KEY user_currency (wp_user_id, currency)', $this->schema_sql );
+		self::assertStringContainsString( 'UNIQUE KEY source_reference (source, reference_key)', $this->schema_sql );
+		self::assertStringContainsString( 'KEY user_created (wp_user_id, created_at_gmt)', $this->schema_sql );
+		self::assertStringContainsString( 'UNIQUE KEY order_id (order_id)', $this->schema_sql );
+		self::assertStringContainsString( 'KEY account_status (account_id, status)', $this->schema_sql );
+		self::assertStringContainsString( 'consumed_amount decimal(26,8) NOT NULL DEFAULT 0', $this->schema_sql );
+		self::assertStringContainsString( 'restored_amount decimal(26,8) NOT NULL DEFAULT 0', $this->schema_sql );
 	}
 }

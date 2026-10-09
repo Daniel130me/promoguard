@@ -19,6 +19,8 @@ and the project uses semantic versioning once a public release line begins.
 - WordPress personal-data export and erasure with anonymous accounting
   retention.
 - Daily bounded retention for eligibility decisions older than 365 days.
+- Standalone, administrator-configurable signup bonuses backed by currency-scoped store-credit balances and an append-only ledger.
+- Customer registration awards by default; Dokan vendor awards wait for vendor approval by default.
 
 ### Security
 

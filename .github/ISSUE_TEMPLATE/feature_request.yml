@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a focused improvement to PromoGuard.
+title: "Feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Explain the limitation or workflow problem without prescribing an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the behavior or result that would solve the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe existing WooCommerce or PromoGuard options you evaluated.
+  - type: textarea
+    id: considerations
+    attributes:
+      label: Security, privacy, and performance considerations
+      description: Note checkout impact, stored data, permissions, or expected query volume.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope confirmation
+      options:
+        - label: This request concerns promotion eligibility, campaign lifecycle, reporting, or store credit.
+          required: true

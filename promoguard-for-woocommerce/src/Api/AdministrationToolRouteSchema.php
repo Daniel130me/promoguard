@@ -8,6 +8,7 @@
 namespace PromoGuard\Api;
 
 use PromoGuard\Indexing\IndexingJob;
+use PromoGuard\SignupBonus\SignupBonusRules;
 
 /** Centralizes closed settings and bounded indexing-tool inputs. */
 final class AdministrationToolRouteSchema {
@@ -17,10 +18,46 @@ final class AdministrationToolRouteSchema {
 	 * @return array<string,mixed>
 	 */
 	public static function settings(): array {
+		$amount = array(
+			'type'     => 'string',
+			'required' => true,
+			'pattern'  => '^(?:0|[1-9][0-9]{0,17})(?:\\.[0-9]{1,8})?$',
+		);
+
 		return array(
 			'delete_data_on_uninstall' => array(
 				'type'     => 'boolean',
 				'required' => true,
+			),
+			'store_credit'             => array(
+				'type'                 => 'object',
+				'required'             => true,
+				'additionalProperties' => false,
+				'properties'           => array(
+					'redemption_enabled' => array(
+						'type'     => 'boolean',
+						'required' => true,
+					),
+				),
+			),
+			'signup_bonus'             => array(
+				'type'                 => 'object',
+				'required'             => true,
+				'additionalProperties' => false,
+				'properties'           => array(
+					'customer_event'  => array(
+						'type'     => 'string',
+						'required' => true,
+						'enum'     => array( SignupBonusRules::EVENT_REGISTRATION, SignupBonusRules::EVENT_DISABLED ),
+					),
+					'customer_amount' => $amount,
+					'vendor_event'    => array(
+						'type'     => 'string',
+						'required' => true,
+						'enum'     => array( SignupBonusRules::EVENT_REGISTRATION, SignupBonusRules::EVENT_APPROVAL, SignupBonusRules::EVENT_DISABLED ),
+					),
+					'vendor_amount'   => $amount,
+				),
 			),
 		);
 	}

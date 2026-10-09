@@ -77,6 +77,11 @@
 
 	function renderSettings( settings ) {
 		byId( 'promoguard-delete-data' ).checked = settings.delete_data_on_uninstall;
+		byId( 'promoguard-credit-redemption-enabled' ).checked = settings.store_credit.redemption_enabled;
+		byId( 'promoguard-customer-bonus-event' ).value = settings.signup_bonus.customer_event;
+		byId( 'promoguard-customer-bonus-amount' ).value = settings.signup_bonus.customer_amount;
+		byId( 'promoguard-vendor-bonus-event' ).value = settings.signup_bonus.vendor_event;
+		byId( 'promoguard-vendor-bonus-amount' ).value = settings.signup_bonus.vendor_amount;
 		const storageStatus = byId( 'promoguard-storage-status' );
 		storageStatus.className = 'promoguard-status';
 		if ( true === settings.storage_engine_supported ) {
@@ -244,6 +249,15 @@
 		try {
 			const settings = await request( '/administration/settings', 'PATCH', {
 				delete_data_on_uninstall: byId( 'promoguard-delete-data' ).checked,
+				store_credit: {
+					redemption_enabled: byId( 'promoguard-credit-redemption-enabled' ).checked,
+				},
+				signup_bonus: {
+					customer_event: byId( 'promoguard-customer-bonus-event' ).value,
+					customer_amount: byId( 'promoguard-customer-bonus-amount' ).value,
+					vendor_event: byId( 'promoguard-vendor-bonus-event' ).value,
+					vendor_amount: byId( 'promoguard-vendor-bonus-amount' ).value,
+				},
 			} );
 			renderSettings( settings );
 			status.textContent = __( 'Settings saved.', 'promoguard-for-woocommerce' );

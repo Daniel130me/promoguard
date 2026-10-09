@@ -1,0 +1,75 @@
+name: Bug report
+description: Report a reproducible problem in a supported environment.
+title: "Bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. Follow SECURITY.md and use a private security advisory.
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: Describe what happened and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Configure ...
+        2. Perform ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: promoguard-version
+    attributes:
+      label: PromoGuard version or commit
+    validations:
+      required: true
+  - type: input
+    id: wordpress-version
+    attributes:
+      label: WordPress version
+    validations:
+      required: true
+  - type: input
+    id: woocommerce-version
+    attributes:
+      label: WooCommerce version
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+    validations:
+      required: true
+  - type: dropdown
+    id: order-storage
+    attributes:
+      label: Order storage
+      options:
+        - HPOS
+        - Legacy WordPress posts
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove customer data, credentials, cookies, keys, payment information, and database contents.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I reproduced this outside a production store where possible.
+          required: true
+        - label: I removed sensitive and customer data from this report.
+          required: true

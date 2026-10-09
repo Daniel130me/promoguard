@@ -80,6 +80,24 @@ final class TableNames {
 		return $this->prefix . 'decisions';
 	}
 
+	/** Return the currency-scoped store-credit accounts table name. */
+	public function credit_accounts(): string {
+
+		return $this->prefix . 'credit_accounts';
+	}
+
+	/** Return the append-only store-credit ledger table name. */
+	public function credit_transactions(): string {
+
+		return $this->prefix . 'credit_transactions';
+	}
+
+	/** Return order-scoped store-credit reservation records. */
+	public function credit_reservations(): string {
+
+		return $this->prefix . 'credit_reservations';
+	}
+
 	/**
 	 * Return every table owned by PromoGuard.
 	 *
@@ -94,6 +112,9 @@ final class TableNames {
 			$this->customer_campaign_state(),
 			$this->usages(),
 			$this->decisions(),
+			$this->credit_accounts(),
+			$this->credit_transactions(),
+			$this->credit_reservations(),
 		);
 	}
 
@@ -106,6 +127,9 @@ final class TableNames {
 		return array(
 			$this->customer_campaign_state(),
 			$this->usages(),
+			$this->credit_accounts(),
+			$this->credit_transactions(),
+			$this->credit_reservations(),
 		);
 	}
 }

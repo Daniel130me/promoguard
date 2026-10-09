@@ -126,6 +126,15 @@ retention, adversarial security coverage, and reproducible release packaging.
 - [x] Clean-database artifact activation, migration, runtime, and lifecycle acceptance
 - [x] Release checklist, changelog, WordPress readme, and compatibility handoff
 
+### Standalone signup bonus and store credit
+
+- [x] Currency-scoped store-credit accounts and append-only transaction ledger
+- [x] Atomic, idempotent grant persistence with indexed source references
+- [x] Customer registration default and Dokan vendor approval default
+
+- [x] Closed administrator configuration for audience timing and amounts
+- [x] Separate signup campaign domain, option, API object, and settings fieldset
+- [x] Coupon campaign services, assignments, and checkout eligibility remain unchanged
 ## Verification
 
 - composer check: passed
@@ -259,6 +268,9 @@ retention, adversarial security coverage, and reproducible release packaging.
 - Retention selects at most 250 diagnostics through the created-time index and deletes only that primary-key set; it never scans or deletes usage accounting.
 - Public REST and WP-CLI failures use fixed messages. Runtime negative tests cover capability separation, key/hash redaction, stored markup, and injection-style filters.
 - The release builder uses a fixed project-scoped staging directory, normalized exclusion rules, locked production dependencies, explicit tree assertions, and deterministic asset generation; packaging adds no application query.
+
+- Signup credit performs one option read per lifecycle event, then one short indexed account transaction only when a rule matches; retries stop at the unique source/reference key.
+- Customer/vendor rule validation is closed, exact decimal handling avoids floats, and WordPress/Dokan hooks are thin adapters over testable services.
 
 ## Compatibility baseline
 

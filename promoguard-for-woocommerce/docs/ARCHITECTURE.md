@@ -139,6 +139,20 @@ newly inserted. A historically fully refunded order whose immutable policy
 allows restoration is inserted directly as restored, without incrementing
 consumed totals.
 
+## Standalone signup bonus and store credit
+
+Signup campaigns live under `PromoGuard\SignupBonus` and are deliberately
+separate from `PromoGuard\Campaign` and native coupon promotion assignments.
+One dedicated, non-autoloaded option stores the closed customer/vendor rule
+object. WooCommerce customer creation is classified at late priority so Dokan
+can assign its seller role first; Dokan registration and `dokan_vendor_enabled`
+feed the vendor lifecycle explicitly.
+
+`PromoGuard\Credit` owns currency-scoped account balances and an append-only
+transaction ledger. A short InnoDB transaction locks the unique user/currency
+account, checks the unique source/reference idempotency key, updates the balance,
+and appends its ledger snapshot. Indexed balance and history access avoids
+scanning WordPress users, orders, coupons, or coupon campaigns.
 ## Performance baseline
 
 Installation uses one bounded metadata query for seven known tables. Identity

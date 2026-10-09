@@ -1,0 +1,76 @@
+/** PromoGuard store-credit opt-in for WooCommerce Cart and Checkout Blocks. */
+( function () {
+	'use strict';
+
+	const blocks = window.wc?.blocksCheckout;
+	const element = window.wp?.element;
+	const plugins = window.wp?.plugins;
+	const i18n = window.wp?.i18n;
+	if ( ! blocks?.ExperimentalDiscountsMeta || ! blocks?.extensionCartUpdate || ! element || ! plugins || ! i18n ) {
+		return;
+	}
+
+	const namespace = 'promoguard-store-credit';
+	const { createElement, useState } = element;
+	const { __, sprintf } = i18n;
+
+	function CreditToggle( { extensions = {} } ) {
+		const credit = extensions[ namespace ];
+		const [ busy, setBusy ] = useState( false );
+		const [ error, setError ] = useState( '' );
+		if ( ! credit?.enabled || ! credit?.authenticated || '0' === credit.available ) {
+			return null;
+		}
+
+		async function update( event ) {
+			setBusy( true );
+			setError( '' );
+			try {
+				await blocks.extensionCartUpdate( {
+					namespace,
+					data: { applied: event.target.checked },
+				} );
+			} catch ( exception ) {
+				setError( exception?.message || __( 'Store-credit preference could not be updated.', 'promoguard-for-woocommerce' ) );
+			} finally {
+				setBusy( false );
+			}
+		}
+
+		return createElement(
+			'div',
+			{ className: 'promoguard-block-credit' },
+			createElement(
+				'label',
+				null,
+				createElement( 'input', {
+					type: 'checkbox',
+					checked: Boolean( credit.applied ),
+					disabled: busy,
+					onChange: update,
+				} ),
+				createElement(
+					'span',
+					null,
+					sprintf(
+						__( 'Apply store credit (%1$s %2$s available)', 'promoguard-for-woocommerce' ),
+						credit.currency,
+						credit.available
+					)
+				)
+			),
+			error ? createElement( 'p', { role: 'alert' }, error ) : null
+		);
+	}
+
+	const render = () => createElement(
+		blocks.ExperimentalDiscountsMeta,
+		null,
+		( props ) => createElement( CreditToggle, props )
+	);
+
+	plugins.registerPlugin( namespace, {
+		render,
+		scope: 'woocommerce-checkout',
+	} );
+}() );
