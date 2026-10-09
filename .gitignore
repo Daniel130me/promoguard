@@ -1,3 +1,5 @@
 /graphify-out/
 /.wp-env-runtime/
 /promoguard-for-woocommerce/.playwright-cli/
+/local-test-backups/
+/local-test-*.log
